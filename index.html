@@ -59,7 +59,6 @@
                 <i class="fa-solid fa-magnifying-glass-plus text-slate-400"></i>
             </div>
 
-            <!-- Stamp Overlay Preview -->
             <div id="cameraStampOverlay" class="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 bg-slate-950/75 backdrop-blur-md text-white text-[10px] sm:text-[11px] p-2 rounded-lg pointer-events-none font-mono space-y-1 border border-white/10 shadow-xl z-10">
                 <div class="flex justify-between items-center">
                     <span id="stampProject" class="text-amber-400 font-bold truncate text-[11px]">-</span>
@@ -345,7 +344,6 @@
             calendarMonth: new Date().getMonth()
         };
 
-        // Global Cache สำหรับพิกัด GPS เพื่อเรียกครั้งเดียวใช้ได้ทั้งแอป
         let cachedGlobalAddress = "กำลังดึงพิกัด GPS อัตโนมัติ...";
         function requestGlobalGeolocation() {
             if (navigator.geolocation) {
@@ -408,27 +406,15 @@
         }
 
         async function saveProjectToFirestore(p) {
-            try {
-                await setDoc(doc(db, "projects", p.id), p);
-            } catch (err) {
-                console.error("Error saving project:", err);
-            }
+            try { await setDoc(doc(db, "projects", p.id), p); } catch (err) { console.error(err); }
         }
 
         async function saveUserToFirestore(u) {
-            try {
-                await setDoc(doc(db, "users", u.username), u);
-            } catch (err) {
-                console.error("Error saving user:", err);
-            }
+            try { await setDoc(doc(db, "users", u.username), u); } catch (err) { console.error(err); }
         }
 
         async function deleteProjectFromFirestore(id) {
-            try {
-                await deleteDoc(doc(db, "projects", id));
-            } catch (err) {
-                console.error("Error deleting project:", err);
-            }
+            try { await deleteDoc(doc(db, "projects", id)); } catch (err) { console.error(err); }
         }
 
         async function uploadPhotoToStorage(projectId, key, dataUrl) {
@@ -840,8 +826,17 @@
                                 <h3 class="font-bold text-slate-900 text-lg mb-1">${p.customerName}</h3>
                                 <p class="text-xs text-slate-500 mb-3">📞 <a href="tel:${p.customerPhone}" class="text-blue-600 font-semibold">${p.customerPhone}</a></p>
                                 <p class="text-xs text-slate-600 mb-3 line-clamp-2">📍 ${p.customerAddress}</p>
+                                
+                                <!-- ปุ่มนำทาง Google Maps Link -->
+                                ${p.mapLink ? `
+                                <div class="mb-4">
+                                    <a href="${p.mapLink}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition shadow-sm">
+                                        <i class="fa-solid fa-map-location-dot"></i> เปิด Google Maps นำทาง
+                                    </a>
+                                </div>` : ''}
+
                                 <div class="bg-slate-50 p-4 rounded-2xl mb-5 space-y-2 text-xs text-slate-600">
-                                    <div class="flex justify-between"><span>📅 นัดหมาย:</span> <strong>${p.date}</strong></div>
+                                    <div class="flex justify-between"><span>📅 นัดหมาย:</span> <strong class="text-slate-900">${p.date || '-'} (${p.timeStart || '00:00'} - ${p.timeEnd || '00:00'} น.)</strong></div>
                                     <div class="flex justify-between"><span>👷 ช่าง:</span> <strong class="text-blue-600">${p.technician}</strong></div>
                                 </div>
                                 <div class="mb-5">
@@ -852,8 +847,8 @@
                             <div class="flex items-center gap-3 pt-5 border-t border-slate-100">
                                 <button onclick="selectProject('${p.id}')" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-xs flex items-center justify-center gap-2 shadow-lg"><i class="fa-solid fa-camera"></i> จัดการรูปถ่าย</button>
                                 ${isAdmin ? `
-                                    <button onclick="openEditProjectModal('${p.id}')" class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-pen text-sm"></i></button>
-                                    <button onclick="promptDeleteProject('${p.id}')" class="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-trash text-sm"></i></button>
+                                    <button onclick="openEditProjectModal('${p.id}')" class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center" title="แก้ไขงาน"><i class="fa-solid fa-pen text-sm"></i></button>
+                                    <button onclick="promptDeleteProject('${p.id}')" class="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center" title="ลบงาน"><i class="fa-solid fa-trash text-sm"></i></button>
                                 ` : ''}
                             </div>
                         </div>`;
@@ -907,7 +902,7 @@
                                 <p class="text-xs text-slate-600">📍 ${p.customerAddress}</p>
                             </div>
                             <div class="flex gap-2.5 pt-4 border-t">
-                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold"><i class="fa-solid fa-file-pdf"></i> PDF (6 รูป/หน้า)</button>
                                 <button onclick="exportProjectExcel('${p.id}')" class="px-4 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-semibold"><i class="fa-solid fa-file-excel"></i> Excel</button>
                                 <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-semibold"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
                             </div>
@@ -920,7 +915,7 @@
         window.selectProject = function(id) { 
             state.selectedProjectId = id; 
             saveAppState(); 
-            requestGlobalGeolocation(); // ขอพิกัด GPS ทันทีที่เลือกโปรเจคเพื่อใช้ร่วมกันทั้งแอป
+            requestGlobalGeolocation(); 
             render(); 
         };
 
@@ -1118,7 +1113,6 @@
             document.getElementById('stampItem').innerText = `${label}`;
             document.getElementById('stampAddress').innerText = `📍 ${cachedGlobalAddress}`;
 
-            // เรียกขอพิกัดรอบใหม่แบบเบื้องหลังทันทีเพื่อความแม่นยำ
             requestGlobalGeolocation();
 
             try {
@@ -1175,7 +1169,6 @@
             const dateStr = `${String(now.getDate()).padStart(2, '0')} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][now.getMonth()]} ${now.getFullYear() + 543}`;
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-            // --- วาดรายละเอียดบนรูปภาพ (ตัวอักษรขนาดเล็กลงครึ่งหนึ่ง ไม่มีพื้นหลังทึบ มีเงาคมชัด) ---
             ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
             ctx.shadowBlur = 4;
             ctx.lineWidth = 2.5;
@@ -1184,7 +1177,6 @@
             const padding = 25;
             let curY = vHeight - 75;
 
-            // 1. เวลา และ วันที่
             ctx.font = 'bold 22px sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.strokeText(`${timeStr}`, padding, curY);
@@ -1195,25 +1187,21 @@
             ctx.strokeText(`${dateStr}`, padding + 75, curY - 5);
             ctx.fillText(`${dateStr}`, padding + 75, curY - 5);
 
-            // 2. รหัสงานและหัวข้อเช็คลิสต์
             curY += 22;
             ctx.font = 'bold 13px sans-serif';
             ctx.fillStyle = '#60a5fa';
             ctx.strokeText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
             ctx.fillText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
 
-            // 3. ที่อยู่/พิกัด Google Maps
             curY += 20;
             ctx.font = 'bold 11px sans-serif';
             ctx.fillStyle = '#34d399';
             ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
             ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
 
-            ctx.shadowBlur = 0; // รีเซ็ตเงา
+            ctx.shadowBlur = 0;
 
             const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-            // อัปโหลดขึ้น Firebase Storage ทันที
             const downloadUrl = await uploadPhotoToStorage(p.id, activeCameraKey, dataUrl);
 
             if (!p.photos) p.photos = {};
@@ -1233,10 +1221,113 @@
         };
         window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); };
 
+        async function fetchImageAsBase64(url) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+
         window.exportProjectPDF = async function(id) {
             const p = state.projects.find(x => x.id === id);
             if (!p) return;
-            showMessage('กำลังสร้าง PDF กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
+            
+            let hasPhotos = false;
+            if (p.photos && typeof p.photos === 'object') {
+                hasPhotos = Object.keys(p.photos).length > 0;
+            }
+
+            if (!hasPhotos) {
+                showMessage('ยังไม่มีรูปภาพในโปรเจคนี้สำหรับสร้างรายงาน PDF', 'fa-solid fa-triangle-exclamation');
+                return;
+            }
+
+            showMessage('กำลังสร้างรายงาน PDF, กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
+
+            let activePhotos = [];
+            for (const item of checklistConfig) {
+                const url = p.photos && p.photos[item.key];
+                const addr = p.texts && p.texts[item.key] ? p.texts[item.key] : '-';
+                if (url) {
+                    const base64Url = await fetchImageAsBase64(url);
+                    if (base64Url) {
+                        activePhotos.push({ label: item.label, url: base64Url, addr });
+                    }
+                }
+            }
+
+            if (activePhotos.length === 0) {
+                closeMsgModal();
+                showMessage('ไม่สามารถโหลดไฟล์รูปภาพได้ กรุณาตรวจสอบอินเทอร์เน็ต', 'fa-solid fa-triangle-exclamation');
+                return;
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = '-9999px';
+            wrapper.style.width = '794px';
+            wrapper.style.background = '#ffffff';
+
+            let pagesHtml = '';
+            for (let i = 0; i < activePhotos.length; i += 6) {
+                const chunk = activePhotos.slice(i, i + 6);
+                let chunkCards = '';
+                chunk.forEach(photo => {
+                    chunkCards += `
+                    <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 310px; box-sizing: border-box; page-break-inside: avoid;">
+                        <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
+                        <div style="width: 100%; height: 250px; background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 4px; display: flex; align-items: center; justify-content: center;">
+                            <img src="${photo.url}" style="width: 100%; height: 100%; object-fit: contain;" />
+                        </div>
+                        <div style="font-size: 9px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
+                    </div>`;
+                });
+
+                pagesHtml += `
+                <div style="width: 794px; height: 1123px; background: #ffffff; padding: 25px; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column;">
+                    <div style="border-bottom: 2px solid #2563eb; padding-bottom: 8px; margin-bottom: 15px; height: 50px; box-sizing: border-box;">
+                        <h1 style="font-size: 16px; font-weight: bold; color: #1e293b; margin: 0 0 4px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (หน้า ${Math.floor(i/6) + 1})</h1>
+                        <div style="font-size: 12px; color: #475569; display: flex; justify-content: space-between;">
+                            <div><strong>รหัสงาน:</strong> ${p.code} | <strong>ลูกค้า:</strong> ${p.customerName}</div>
+                            <div><strong>วันที่:</strong> ${p.date}</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start; height: 1010px; box-sizing: border-box;">
+                        ${chunkCards}
+                    </div>
+                </div>`;
+            }
+
+            wrapper.innerHTML = pagesHtml;
+            document.body.appendChild(wrapper);
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageDivs = wrapper.children;
+
+                for (let idx = 0; idx < pageDivs.length; idx++) {
+                    const canvas = await html2canvas(pageDivs[idx], { scale: 2, useCORS: true });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                    if (idx > 0) pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                }
+
+                pdf.save(`EV_Report_${p.code}.pdf`);
+                closeMsgModal();
+            } catch (err) {
+                console.error(err);
+                closeMsgModal();
+                showMessage('เกิดข้อผิดพลาดในการสร้างไฟล์ PDF', 'fa-solid fa-triangle-exclamation');
+            }
+            document.body.removeChild(wrapper);
         };
 
         window.exportProjectExcel = function(id) {
@@ -1271,7 +1362,7 @@
 
         window.onload = function() {
             initFirebaseSync();
-            requestGlobalGeolocation(); // ขอสิทธิ์พิกัด GPS ครั้งเดียวตั้งแต่เปิดแอป
+            requestGlobalGeolocation(); 
             render();
         };
     </script>
