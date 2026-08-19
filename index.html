@@ -827,7 +827,6 @@
                                 <p class="text-xs text-slate-500 mb-3">📞 <a href="tel:${p.customerPhone}" class="text-blue-600 font-semibold">${p.customerPhone}</a></p>
                                 <p class="text-xs text-slate-600 mb-3 line-clamp-2">📍 ${p.customerAddress}</p>
                                 
-                                <!-- ปุ่มนำทาง Google Maps Link -->
                                 ${p.mapLink ? `
                                 <div class="mb-4">
                                     <a href="${p.mapLink}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition shadow-sm">
@@ -908,7 +907,6 @@
                     </h3>
                 </div>
 
-                <!-- ช่องค้นหาในหน้า Export -->
                 <div class="relative w-full max-w-lg">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" oninput="state.searchQuery=this.value; render();" value="${state.searchQuery}" placeholder="ค้นหาโปรเจคเพื่อส่งออก..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
@@ -1244,15 +1242,32 @@
 
         async function fetchImageAsBase64(url) {
             try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
+                return await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "anonymous";
+                    img.onload = () => {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL("image/jpeg", 0.85));
+                    };
+                    img.onerror = () => reject(new Error("Image load failed"));
+                    img.src = url;
                 });
             } catch (e) {
-                return null;
+                try {
+                    const response = await fetch(url, { mode: 'cors' });
+                    const blob = await response.blob();
+                    return await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (err) {
+                    return null;
+                }
             }
         }
 
@@ -1305,7 +1320,7 @@
                     <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 310px; box-sizing: border-box; page-break-inside: avoid;">
                         <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
                         <div style="width: 100%; height: 250px; background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 4px; display: flex; align-items: center; justify-content: center;">
-                            <img src="${photo.url}" style="width: 100%; height: 100%; object-fit: contain;" />
+                            <img src="${photo.url}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
                         </div>
                         <div style="font-size: 9px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
                     </div>`;
@@ -1335,8 +1350,8 @@
                 const pageDivs = wrapper.children;
 
                 for (let idx = 0; idx < pageDivs.length; idx++) {
-                    const canvas = await html2canvas(pageDivs[idx], { scale: 2, useCORS: true });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                    const canvas = await html2canvas(pageDivs[idx], { scale: 1.5, useCORS: true, allowTaint: true });
+                    const imgData = canvas.toDataURL('image/jpeg', 0.85);
                     if (idx > 0) pdf.addPage();
                     pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
                 }
@@ -1363,22 +1378,47 @@
 
         window.exportProjectZIP = async function(id) {
             const p = state.projects.find(x => x.id === id);
-            if (!p || !p.photos) { showMessage('ไม่พบรูปภาพ', 'fa-solid fa-triangle-exclamation'); return; }
+            if (!p || !p.photos || Object.keys(p.photos).length === 0) { 
+                showMessage('ไม่พบรูปภาพในโปรเจคนี้', 'fa-solid fa-triangle-exclamation'); 
+                return; 
+            }
+            
             showMessage('กำลังเตรียมไฟล์ ZIP...', 'fa-solid fa-spinner animate-spin');
+            
             const zip = new JSZip();
             const folder = zip.folder(`EV_${p.code}_Photos`);
-            for (const key of Object.keys(p.photos)) {
+            const keys = Object.keys(p.photos);
+
+            const promises = keys.map(async (key) => {
                 const conf = checklistConfig.find(c => c.key === key);
-                const res = await fetch(p.photos[key]);
-                const blob = await res.blob();
-                folder.file(`${conf ? conf.label : key}.jpg`, blob);
+                const fileName = `${conf ? conf.label : key}.jpg`;
+                const url = p.photos[key];
+                
+                try {
+                    const base64 = await fetchImageAsBase64(url);
+                    if (base64) {
+                        const base64Data = base64.split(',')[1];
+                        folder.file(fileName, base64Data, { base64: true });
+                    }
+                } catch (e) {
+                    console.warn(`Could not load image for ${fileName}:`, e);
+                }
+            });
+
+            await Promise.allSettled(promises);
+
+            try {
+                const content = await zip.generateAsync({ type: 'blob' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(content);
+                link.download = `EV_Photos_${p.code}.zip`;
+                link.click();
+                closeMsgModal();
+            } catch (err) {
+                console.error(err);
+                closeMsgModal();
+                showMessage('เกิดข้อผิดพลาดในการสร้างไฟล์ ZIP', 'fa-solid fa-triangle-exclamation');
             }
-            const content = await zip.generateAsync({ type: 'blob' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `EV_Photos_${p.code}.zip`;
-            link.click();
-            closeMsgModal();
         };
 
         window.onload = function() {
