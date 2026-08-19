@@ -232,6 +232,9 @@
         </div>
     </div>
 
+    <!-- Hidden File Input for Gallery Upload -->
+    <input type="file" id="galleryFileInput" accept="image/*" class="hidden" onchange="handleGalleryFileSelected(event)">
+
     <!-- Firebase App & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -903,7 +906,7 @@
             <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8 animate-in fade-in duration-300">
                 <div class="flex justify-between items-center pb-6 border-b border-slate-100">
                     <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-share-nodes"></i></div> ส่งออกรายงาน PDF / Excel
+                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-share-nodes"></i></div> ส่งออกรายงาน PDF (ขนาด A3 / 6 รูปต่อหน้า - ปรับลดขนาดรูปครึ่งหนึ่ง) / Excel
                     </h3>
                 </div>
 
@@ -921,7 +924,7 @@
                                 <p class="text-xs text-slate-600">📍 ${p.customerAddress}</p>
                             </div>
                             <div class="flex gap-2.5 pt-4 border-t">
-                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold hover:bg-rose-700 transition"><i class="fa-solid fa-file-pdf"></i> PDF (6 รูป/หน้า)</button>
+                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold hover:bg-rose-700 transition"><i class="fa-solid fa-file-pdf"></i> ปริ้น PDF (A3 - 6รูป/หน้า)</button>
                                 <button onclick="exportProjectExcel('${p.id}')" class="px-4 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-semibold hover:bg-emerald-700 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
                                 <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-semibold hover:bg-indigo-700 transition"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
                             </div>
@@ -982,16 +985,20 @@
                                                 <img src="${photoUrl}" class="w-full h-full object-cover">
                                             </div>
                                             <div class="flex gap-2 pt-1">
-                                                <button onclick="openCameraModalForItem('${item.key}', '${item.label}')" class="flex-1 py-2.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold">เปลี่ยนรูป</button>
+                                                <button onclick="openCameraModalForItem('${item.key}', '${item.label}')" class="flex-1 py-2.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold">ถ่ายใหม่</button>
+                                                <button onclick="triggerGalleryUpload('${item.key}', '${item.label}')" class="py-2.5 px-3 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold" title="แนบรูปภาพจากเครื่อง"><i class="fa-solid fa-image"></i></button>
                                                 <button onclick="deleteProjectPhoto('${p.id}', '${item.key}')" class="px-3 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
                                             </div>
                                         </div>
                                     ` : `
                                         <div class="space-y-2 mb-4">
-                                            <div class="aspect-[4/3] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100" onclick="openCameraModalForItem('${item.key}', '${item.label}')">
+                                            <div class="aspect-[4/3] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 p-2 text-center" onclick="openCameraModalForItem('${item.key}', '${item.label}')">
                                                 <i class="fa-solid fa-camera text-2xl mb-1 text-blue-500"></i>
                                                 <span class="text-xs font-semibold text-blue-600">เปิดกล้องถ่ายภาพ</span>
                                             </div>
+                                            <button onclick="triggerGalleryUpload('${item.key}', '${item.label}')" class="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                                                <i class="fa-solid fa-image"></i> แนบรูปภาพจากเครื่อง
+                                            </button>
                                         </div>
                                     `}
                                 </div>
@@ -1114,6 +1121,92 @@
         let mediaStream = null;
         let currentFacingMode = 'environment';
         let currentZoom = 1;
+
+        // Gallery Upload Handler
+        let galleryUploadKey = null;
+        window.triggerGalleryUpload = function(key, label) {
+            galleryUploadKey = key;
+            const fileInput = document.getElementById('galleryFileInput');
+            fileInput.value = '';
+            fileInput.click();
+        };
+
+        window.handleGalleryFileSelected = async function(event) {
+            const file = event.target.files[0];
+            if (!file || !galleryUploadKey) return;
+            
+            showMessage('กำลังอัปโหลดรูปภาพ...', 'fa-solid fa-spinner animate-spin');
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 1280;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                    else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    const p = state.projects.find(x => x.id === state.selectedProjectId);
+                    if (!p) return;
+
+                    const now = new Date();
+                    const dateStr = `${String(now.getDate()).padStart(2, '0')} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][now.getMonth()]} ${now.getFullYear() + 543}`;
+                    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+                    ctx.shadowBlur = 4;
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+
+                    const padding = 25;
+                    let curY = h - 75;
+
+                    ctx.font = 'bold 22px sans-serif';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeText(`${timeStr}`, padding, curY);
+                    ctx.fillText(`${timeStr}`, padding, curY);
+
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.strokeText(`${dateStr}`, padding + 75, curY - 5);
+                    ctx.fillText(`${dateStr}`, padding + 75, curY - 5);
+
+                    curY += 22;
+                    ctx.font = 'bold 13px sans-serif';
+                    ctx.fillStyle = '#60a5fa';
+                    ctx.strokeText(`รหัสงาน: ${p.code} | ${galleryUploadKey}`, padding, curY);
+                    ctx.fillText(`รหัสงาน: ${p.code} | ${galleryUploadKey}`, padding, curY);
+
+                    curY += 20;
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.fillStyle = '#34d399';
+                    ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
+                    ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
+
+                    ctx.shadowBlur = 0;
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    const downloadUrl = await uploadPhotoToStorage(p.id, galleryUploadKey, dataUrl);
+
+                    if (!p.photos) p.photos = {};
+                    if (!p.texts) p.texts = {};
+                    p.photos[galleryUploadKey] = downloadUrl;
+                    p.texts[galleryUploadKey] = cachedGlobalAddress;
+
+                    await saveProjectToFirestore(p);
+                    closeMsgModal();
+                    render();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
 
         window.openCameraModalForItem = async function(key, label) {
             activeCameraKey = key;
@@ -1271,6 +1364,7 @@
             }
         }
 
+        // ปรับปรุงฟังก์ชันส่งออก PDF เป็นขนาด A3 จำนวน 6 รูปต่อหน้า (ปรับลดขนาดกล่องรูปภาพลงครึ่งหนึ่งตามคำขอ)
         window.exportProjectPDF = async function(id) {
             const p = state.projects.find(x => x.id === id);
             if (!p) return;
@@ -1285,7 +1379,7 @@
                 return;
             }
 
-            showMessage('กำลังสร้างรายงาน PDF, กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
+            showMessage('กำลังสร้างรายงาน PDF (ขนาด A3 / 6 รูปต่อหน้า), กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
 
             let activePhotos = [];
             for (const item of checklistConfig) {
@@ -1305,10 +1399,11 @@
                 return;
             }
 
+            // ขนาดกระดาษ A3 (แนวตั้ง) มิติพิกเซลที่ความละเอียดสูง: 1122 x 1587 px
             const wrapper = document.createElement('div');
             wrapper.style.position = 'absolute';
             wrapper.style.left = '-9999px';
-            wrapper.style.width = '794px';
+            wrapper.style.width = '1122px';
             wrapper.style.background = '#ffffff';
 
             let pagesHtml = '';
@@ -1316,26 +1411,27 @@
                 const chunk = activePhotos.slice(i, i + 6);
                 let chunkCards = '';
                 chunk.forEach(photo => {
+                    // ปรับความสูงของการ์ดและกล่องรูปภาพลงครึ่งหนึ่ง (ความสูงกล่องรูปภาพเหลือ 170px และกรอบการ์ดเหลือ 230px)
                     chunkCards += `
-                    <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 310px; box-sizing: border-box; page-break-inside: avoid;">
-                        <div style="font-weight: bold; font-size: 12px; margin-bottom: 4px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
-                        <div style="width: 100%; height: 250px; background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 4px; display: flex; align-items: center; justify-content: center;">
+                    <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 230px; box-sizing: border-box; page-break-inside: avoid;">
+                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
+                        <div style="width: 100%; height: 170px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 6px; display: flex; align-items: center; justify-content: center;">
                             <img src="${photo.url}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
                         </div>
-                        <div style="font-size: 9px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
+                        <div style="font-size: 10px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
                     </div>`;
                 });
 
                 pagesHtml += `
-                <div style="width: 794px; height: 1123px; background: #ffffff; padding: 25px; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column;">
-                    <div style="border-bottom: 2px solid #2563eb; padding-bottom: 8px; margin-bottom: 15px; height: 50px; box-sizing: border-box;">
-                        <h1 style="font-size: 16px; font-weight: bold; color: #1e293b; margin: 0 0 4px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (หน้า ${Math.floor(i/6) + 1})</h1>
-                        <div style="font-size: 12px; color: #475569; display: flex; justify-content: space-between;">
+                <div style="width: 1122px; height: 1587px; background: #ffffff; padding: 40px; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column;">
+                    <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 25px; height: 75px; box-sizing: border-box;">
+                        <h1 style="font-size: 22px; font-weight: bold; color: #1e293b; margin: 0 0 6px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (ขนาดกระดาษ A3 - หน้า ${Math.floor(i/6) + 1})</h1>
+                        <div style="font-size: 14px; color: #475569; display: flex; justify-content: space-between;">
                             <div><strong>รหัสงาน:</strong> ${p.code} | <strong>ลูกค้า:</strong> ${p.customerName}</div>
                             <div><strong>วันที่:</strong> ${p.date}</div>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start; height: 1010px; box-sizing: border-box;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-content: start; height: 1400px; box-sizing: border-box;">
                         ${chunkCards}
                     </div>
                 </div>`;
@@ -1346,17 +1442,18 @@
 
             try {
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                // สร้างเอกสาร PDF ขนาด A3 แนวตั้ง (297 x 420 มิลลิเมตร)
+                const pdf = new jsPDF('p', 'mm', 'a3');
                 const pageDivs = wrapper.children;
 
                 for (let idx = 0; idx < pageDivs.length; idx++) {
                     const canvas = await html2canvas(pageDivs[idx], { scale: 1.5, useCORS: true, allowTaint: true });
                     const imgData = canvas.toDataURL('image/jpeg', 0.85);
                     if (idx > 0) pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, 297, 420);
                 }
 
-                pdf.save(`EV_Report_${p.code}.pdf`);
+                pdf.save(`EV_Report_A3_${p.code}.pdf`);
                 closeMsgModal();
             } catch (err) {
                 console.error(err);
