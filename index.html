@@ -2,1572 +2,1033 @@
 <html lang="th" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>EV Charger Job & Photo Management App - Firebase Edition</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKP7 Pro Solutions - ระบบลงทะเบียนข้อมูลลูกค้าวงจรที่ 2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts (Inter & Sarabun) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Export Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Prompt', 'sans-serif'] } } } }
+    </script>
     <style>
-        body { 
-            font-family: 'Inter', 'Sarabun', sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
-            background-color: #f8fafc;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 24 24'%3E%3Cpath fill='%233b82f6' fill-opacity='0.045' d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/%3E%3C/svg%3E");
+        body { font-family: 'Prompt', sans-serif; }
+        .bg-custom-image {
+            background-image: linear-gradient(rgba(40, 10, 25, 0.85), rgba(60, 15, 35, 0.85)), url('https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1785518472043.jpg-F1j1Wn3LhRz6UaN6cR2fX9PqMv8W4p.jpeg');
+            background-size: cover; background-position: center; background-attachment: fixed;
         }
-        .glass-panel { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(24px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05); }
-        .spinner { border: 3px solid rgba(59, 130, 246, 0.2); width: 36px; height: 36px; border-radius: 50%; border-left-color: #2563eb; animation: spin 0.8s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        button, a, input, select, textarea { touch-action: manipulation; }
+        .glass-card { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); }
+        @media print {
+            body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; }
+            header, footer, button, .no-print { display: none !important; }
+            .glass-card { background: white !important; backdrop-filter: none !important; box-shadow: none !important; border: none !important; }
+            .print-sheet { display: block !important; margin: 0 !important; padding: 10px 15px !important; width: 100% !important; }
+            @page { size: A4; margin: 10mm; }
+            .main-app-content { display: none !important; }
+        }
+        .print-sheet { display: none; }
     </style>
 </head>
-<body class="text-slate-800 antialiased h-full flex flex-col selection:bg-blue-600 selection:text-white">
+<body class="h-full bg-custom-image text-slate-800 antialiased">
 
-    <!-- Firebase Sync Status Bar -->
-    <div class="bg-slate-900 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-between gap-2 shadow-md shrink-0">
-        <div class="flex items-center gap-2 flex-1 justify-center text-emerald-400 font-bold">
-            <i class="fa-solid fa-fire animate-pulse text-amber-400"></i> 🔥 <span id="sheetStatusText">เชื่อมต่อระบบ Firebase Firestore เรียบร้อยแล้ว (Real-time Sync)</span>
-        </div>
-    </div>
-
-    <div id="app" class="flex-1 flex flex-col w-full max-w-full overflow-x-hidden"></div>
-
-    <!-- Map Camera Capture Modal -->
-    <div id="cameraModal" class="fixed inset-0 bg-slate-950 z-50 hidden flex flex-col items-center justify-between p-0 overflow-hidden">
-        <div class="bg-slate-900/80 backdrop-blur-md text-white px-6 py-4 flex justify-between items-center w-full z-10 shrink-0 border-b border-white/10">
-            <h3 class="font-bold text-base sm:text-lg flex items-center gap-3"><div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-camera"></i></div> ถ่ายภาพเช็คลิสต์</h3>
-            <button onclick="closeCameraModal()" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
-        </div>
-        <div class="relative bg-black flex-1 w-full flex items-center justify-center overflow-hidden">
-            <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover origin-center transition-transform duration-75"></video>
-            <canvas id="cameraCanvas" class="hidden"></canvas>
-            
-            <div class="absolute top-4 right-4 bg-slate-950/70 backdrop-blur-md px-4 py-2.5 rounded-2xl flex items-center gap-3 text-white text-xs z-20 border border-white/10 shadow-xl">
-                <i class="fa-solid fa-magnifying-glass-minus text-slate-400"></i>
-                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1" oninput="handleZoomChange(this.value)" class="w-24 sm:w-32 accent-blue-500 cursor-pointer">
-                <i class="fa-solid fa-magnifying-glass-plus text-slate-400"></i>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md no-print">
+        <div class="glass-card rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 border border-pink-300/40 text-slate-800">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">TKP7 Pro Solutions</h2>
+                <p class="text-xs text-pink-600 font-semibold mt-1">ระบบลงทะเบียนข้อมูลลูกค้าวงจรที่ 2</p>
             </div>
-
-            <div id="cameraStampOverlay" class="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 bg-slate-950/75 backdrop-blur-md text-white text-[10px] sm:text-[11px] p-2 rounded-lg pointer-events-none font-mono space-y-1 border border-white/10 shadow-xl z-10">
-                <div class="flex justify-between items-center">
-                    <span id="stampProject" class="text-amber-400 font-bold truncate text-[11px]">-</span>
-                    <span id="stampDateTime" class="text-slate-300 text-[10px]">-</span>
-                </div>
-                <div id="stampItem" class="text-blue-400 font-bold truncate text-[11px]">-</div>
-                <div id="stampAddress" class="text-emerald-400 truncate text-[10px]">📍 พร้อมใช้งานพิกัด GPS</div>
-            </div>
-        </div>
-        <div class="p-4 sm:p-6 bg-slate-900/90 backdrop-blur-md flex flex-wrap justify-between items-center gap-3 w-full z-10 shrink-0 border-t border-white/10">
-            <button onclick="switchCamera()" class="px-5 py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-semibold text-xs sm:text-sm flex items-center gap-2.5 transition shadow-sm"><i class="fa-solid fa-rotate text-blue-400"></i> สลับกล้อง</button>
-            <button onclick="capturePhotoFromVideo()" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/40 text-sm sm:text-base flex items-center gap-2.5 transition active:scale-95"><i class="fa-solid fa-camera text-white"></i> ถ่ายรูป</button>
-            <button onclick="closeCameraModal()" class="px-5 py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-semibold text-xs sm:text-sm transition shadow-sm">ยกเลิก</button>
-        </div>
-    </div>
-
-    <!-- Create Project Modal -->
-    <div id="createProjectModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-[2.5rem] max-w-xl w-full p-6 sm:p-8 shadow-2xl my-auto max-h-[92vh] overflow-y-auto border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                <h3 class="font-bold text-base sm:text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-folder-plus"></i></div> สร้างโปรเจคใหม่ (จ่ายงานช่าง)</h3>
-                <button onclick="closeCreateProjectModal()" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form id="createProjectForm" onsubmit="handleCreateProject(event)" class="space-y-4.5">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Project Code (รหัสงาน)</label>
-                        <input type="text" id="newProjCode" required placeholder="เช่น OJ2608001" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">ช่างผู้รับผิดชอบ</label>
-                        <select id="newProjTech" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                            <option value="">-- เลือกช่าง --</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">ชื่อลูกค้า</label>
-                        <input type="text" id="newProjCustomer" required placeholder="คุณสมชาย ใจดี" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">เบอร์โทรศัพท์ลูกค้า</label>
-                        <input type="tel" id="newProjPhone" required placeholder="0812345678" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">ที่อยู่ลูกค้า</label>
-                    <textarea id="newProjAddress" rows="2.5" required placeholder="123/45 ถ.สุขุมวิท..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">E-mail</label>
+                    <input type="email" id="loginEmail" required autocomplete="off" class="w-full px-4 py-3 bg-white/90 border border-slate-200 rounded-xl focus:ring-2 focus:ring-pink-500 text-sm">
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Google Maps Link</label>
-                        <input type="url" id="newProjMap" placeholder="https://maps.google.com/?q=..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">วันที่นัดหมาย</label>
-                        <input type="date" id="newProjDate" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">เวลานัดเข้าติดตั้ง</label>
-                        <div class="flex items-center gap-2">
-                            <input type="text" id="newProjTimeStart" required placeholder="10:00" class="w-full px-2 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                            <span class="text-xs text-slate-400 shrink-0 font-medium">ถึง</span>
-                            <input type="text" id="newProjTimeEnd" required placeholder="11:00" class="w-full px-2 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">หมายเหตุงาน</label>
-                    <textarea id="newProjNotes" rows="2" placeholder="รายละเอียดเพิ่มเติม..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeCreateProjectModal()" class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-sm transition">ยกเลิก</button>
-                    <button type="submit" class="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/30 transition">บันทึกและจ่ายงาน</button>
-                </div>
+                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-pink-600 to-rose-600 text-white font-bold rounded-xl shadow-lg text-sm">เข้าสู่ระบบ</button>
             </form>
         </div>
     </div>
 
-    <!-- Edit Project Modal -->
-    <div id="editProjectModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-[2.5rem] max-w-xl w-full p-6 sm:p-8 shadow-2xl my-auto max-h-[92vh] overflow-y-auto border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                <h3 class="font-bold text-base sm:text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-pen-to-square"></i></div> แก้ไขข้อมูลโปรเจค</h3>
-                <button onclick="closeEditProjectModal()" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- MAIN APP -->
+    <div id="app" class="min-h-full flex flex-col justify-between hidden">
+        <header class="bg-slate-900/80 backdrop-blur-md border-b border-pink-500/20 sticky top-0 z-30 shadow-lg no-print">
+            <div class="max-w-7xl mx-auto px-4 h-18 flex items-center justify-between py-3">
+                <h1 class="font-bold text-white text-lg">TKP7 Pro Solutions <span class="text-xs px-2 py-0.5 rounded bg-pink-500/20 text-pink-300">วงจรที่ 2</span></h1>
+                <div class="flex items-center space-x-2">
+                    <button onclick="switchTab('form')" id="nav-form" class="px-3.5 py-2 text-sm font-medium rounded-xl bg-pink-600 text-white">ลงทะเบียน</button>
+                    <button onclick="switchTab('list')" id="nav-list" class="hidden px-3.5 py-2 text-sm font-medium rounded-xl text-pink-100 hover:bg-white/10">รายการลูกค้า</button>
+                    <button onclick="switchTab('pricing')" id="nav-pricing" class="hidden px-3.5 py-2 text-sm font-medium rounded-xl text-pink-100 hover:bg-white/10">กำหนดราคาอุปกรณ์</button>
+                    <button onclick="switchTab('logs')" id="nav-logs" class="hidden px-3.5 py-2 text-sm font-medium rounded-xl text-pink-100 hover:bg-white/10">ประวัติ Login</button>
+                    <button onclick="handleLogout()" class="px-3.5 py-2 text-sm font-medium rounded-xl text-rose-200 hover:bg-rose-500/20"><i class="fa-solid fa-right-from-bracket"></i> ออก</button>
+                </div>
             </div>
-            <form id="editProjectForm" onsubmit="handleEditProject(event)" class="space-y-4.5">
-                <input type="hidden" id="editProjId">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Project Code (รหัสงาน)</label>
-                        <input type="text" id="editProjCode" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 py-8 w-full flex-grow main-app-content">
+            <!-- TAB 1: FORM -->
+            <div id="tab-form" class="space-y-6">
+                <div class="glass-card rounded-2xl shadow-2xl border border-pink-200/50 overflow-hidden">
+                    <div class="bg-gradient-to-r from-pink-700 to-rose-600 px-6 py-5 text-white flex justify-between items-center">
+                        <div>
+                            <h2 id="formTitle" class="text-xl font-bold">ฟอร์มบันทึกข้อมูลลูกค้าใหม่</h2>
+                            <p id="formSubtitle" class="text-pink-100 text-xs">กรอกรายละเอียดข้อมูลลูกค้าเพื่อบันทึกและพิมพ์ใบงาน</p>
+                        </div>
+                        <button id="cancelEditBtn" onclick="resetFormMode()" class="hidden px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs rounded-lg"><i class="fa-solid fa-xmark mr-1"></i> ยกเลิกแก้ไข</button>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">ช่างผู้รับผิดชอบ</label>
-                        <select id="editProjTech" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                            <option value="">-- เลือกช่าง --</option>
-                        </select>
-                    </div>
+                    <form id="customerForm" onsubmit="handleFormSubmit(event)" class="p-6 space-y-6">
+                        <input type="hidden" id="editingCustomerId" value="">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">ชื่อ - นามสกุลลูกค้า *</label>
+                                <input type="text" id="custName" required placeholder="สมชาย ใจดี" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">เบอร์โทรศัพท์ติดต่อ *</label>
+                                <input type="tel" id="custPhone" required placeholder="0812345678" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">E-mail (อัตโนมัติ)</label>
+                                <input type="email" id="custEmail" readonly class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-600 font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">ผู้แนะนำ</label>
+                                <input type="text" id="custRecommender" placeholder="ผู้แนะนำ (ถ้ามี)" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">แบรนด์อุปกรณ์ *</label>
+                                <select id="custService" required onchange="onEquipmentChange()" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm">
+                                    <option value="">-- เลือกแบรนด์อุปกรณ์ --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">อุปกรณ์เสริม (เลือกได้สูงสุด 3 รายการ)</label>
+                                <div id="accessoryCheckboxContainer" class="p-3 bg-white/80 border border-slate-200 rounded-xl space-y-2 max-h-40 overflow-y-auto">
+                                    <span class="text-xs text-slate-400">กำลังโหลดรายการ...</span>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <div id="selectedEquipmentImageContainer" class="mt-1 hidden">
+                                    <span class="block text-xs font-semibold text-pink-800 mb-1">รูปภาพอุปกรณ์ที่เลือก:</span>
+                                    <div class="inline-block p-1 bg-white border border-pink-200 rounded-xl shadow-sm">
+                                        <img id="selectedEquipmentImg" src="" alt="Equipment Preview" class="w-64 h-64 object-cover rounded-lg">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">ประเภทสายไฟ *</label>
+                                <select id="custWire" required onchange="calculateTotal()" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm">
+                                    <option value="">-- เลือกสายไฟ --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">ระยะสาย (เมตร) *</label>
+                                <input type="number" id="custDistanceInput" required min="1" value="" oninput="calculateTotal()" placeholder="ตัวอย่าง: 10" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 mb-2">ประกัน</label>
+                                <select id="custWarranty" onchange="calculateTotal()" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm">
+                                    <option value="0">-- เลือกประกัน --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">สถานที่ติดตั้ง / ที่อยู่ลูกค้า *</label>
+                            <textarea id="custAddress" required rows="2" placeholder="ที่อยู่สถานที่ติดตั้ง" class="w-full px-4 py-3 bg-white/80 border border-slate-200 rounded-xl text-sm"></textarea>
+                        </div>
+                        <div class="p-4 bg-pink-50 border border-pink-200 rounded-xl space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-pink-900">ราคารวมทั้งสิ้น (Total Price)</span>
+                                <span id="displayTotalPrice" class="text-2xl font-bold text-pink-700">0.00 บาท</span>
+                            </div>
+                            <div id="basePackagesBreakdown" class="hidden text-xs text-slate-600 pt-2 border-t border-pink-200">
+                                <span class="font-bold block mb-1">แพ็คเกจพื้นฐานที่รวมอยู่:</span>
+                                <div id="basePackagesList" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="submit" id="submitBtn" class="px-8 py-3 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium shadow flex items-center gap-2">
+                                <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลลูกค้า
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">ชื่อลูกค้า</label>
-                        <input type="text" id="editProjCustomer" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">เบอร์โทรศัพท์ลูกค้า</label>
-                        <input type="tel" id="editProjPhone" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">ที่อยู่ลูกค้า</label>
-                    <textarea id="editProjAddress" rows="2.5" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Google Maps Link</label>
-                        <input type="url" id="editProjMap" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">วันที่นัดหมาย</label>
-                        <input type="date" id="editProjDate" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">เวลานัดเข้าติดตั้ง</label>
-                        <div class="flex items-center gap-2">
-                            <input type="text" id="editProjTimeStart" required placeholder="10:00" class="w-full px-2 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                            <span class="text-xs text-slate-400 shrink-0 font-medium">ถึง</span>
-                            <input type="text" id="editProjTimeEnd" required placeholder="11:00" class="w-full px-2 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+            </div>
+
+            <!-- TAB 2: LIST -->
+            <div id="tab-list" class="space-y-6 hidden">
+                <div class="glass-card rounded-2xl shadow-2xl border border-pink-200/50 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-900"><i class="fa-solid fa-clipboard-list text-pink-600"></i> รายชื่อลูกค้าที่ลงทะเบียนแล้ว</h2>
+                        <div id="newJobAlert" class="hidden px-3 py-1 bg-rose-600 text-white text-xs font-bold rounded-full animate-bounce shadow-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-bell"></i> มีงานเข้าใหม่!
                         </div>
                     </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-pink-50 border-b border-pink-100 text-xs font-bold text-pink-800 uppercase">
+                                    <th class="py-3 px-4">ชื่อลูกค้า / เบอร์โทร</th>
+                                    <th class="py-3 px-4">ผู้แนะนำ</th>
+                                    <th class="py-3 px-4">สถานะ (เลือกเปลี่ยนได้)</th>
+                                    <th class="py-3 px-4">แบรนด์อุปกรณ์</th>
+                                    <th class="py-3 px-4">ราคารวม</th>
+                                    <th class="py-3 px-4 text-center">พิมพ์ใบงาน / จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customerTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">หมายเหตุงาน</label>
-                    <textarea id="editProjNotes" rows="2" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="closeEditProjectModal()" class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-sm transition">ยกเลิก</button>
-                    <button type="submit" class="flex-1 py-4 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-amber-600/30 transition">บันทึกแก้ไข</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Image Modal -->
-    <div id="imageModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 hidden flex flex-col items-center justify-center p-4">
-        <button onclick="closeImageModal()" class="absolute top-6 right-6 text-white text-xl bg-white/10 hover:bg-white/25 w-12 h-12 rounded-full z-10 transition flex items-center justify-center backdrop-blur"><i class="fa-solid fa-xmark"></i></button>
-        <img id="modalImage" src="" alt="Preview" class="max-w-[95vw] max-h-[80vh] rounded-[2rem] shadow-2xl object-contain border border-white/10">
-        <div id="modalImageCaption" class="text-white mt-5 text-xs sm:text-sm font-medium text-center px-6 py-3 bg-slate-900/90 rounded-2xl border border-white/10 backdrop-blur"></div>
-    </div>
-
-    <!-- Message Modal -->
-    <div id="msgModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-8 shadow-2xl text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div id="msgIcon" class="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner"></div>
-            <p id="msgText" class="text-sm font-semibold text-slate-800 mb-6 leading-relaxed">แจ้งเตือนระบบ</p>
-            <button onclick="closeMsgModal()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/30 transition">ตกลง</button>
-        </div>
-    </div>
-
-    <!-- Delete Modal -->
-    <div id="deleteModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-8 shadow-2xl text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div class="w-16 h-16 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <p class="text-sm font-semibold text-slate-800 mb-6">คุณต้องการลบโปรเจคนี้ใช่หรือไม่?</p>
-            <div class="flex gap-3">
-                <button onclick="closeDeleteModal()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-sm transition">ยกเลิก</button>
-                <button onclick="executeDeleteProject()" class="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-red-600/30 transition">ลบงาน</button>
             </div>
+
+            <!-- TAB 3: PRICING MANAGEMENT -->
+            <div id="tab-pricing" class="hidden space-y-8">
+                <!-- 1. แบรนด์อุปกรณ์ -->
+                <div class="glass-card rounded-2xl p-6 border border-pink-200 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 text-pink-900"><i class="fa-solid fa-tags text-pink-600"></i> กำหนดราคาแบรนด์อุปกรณ์หลัก</h2>
+                    <form onsubmit="handleSavePricing(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-4 items-end mb-4">
+                        <input type="text" id="priceBrand" required placeholder="แบรนด์อุปกรณ์" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="priceAmount" required step="0.01" placeholder="แพ็คเกจพื้นฐาน" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="priceCircuit" required step="0.01" placeholder="ราคาวงจร" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="url" id="priceImage" placeholder="ลิงก์รูปภาพ (URL)" class="px-3 py-2 border rounded-xl text-sm">
+                        <button type="submit" class="py-2 bg-pink-600 text-white rounded-xl text-sm font-bold shadow">บันทึกแบรนด์</button>
+                    </form>
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-xs text-slate-500 border-b">
+                                <th class="py-2 px-4">รูปภาพ</th>
+                                <th class="py-2 px-4">แบรนด์อุปกรณ์</th>
+                                <th class="py-2 px-4">แพ็คเกจ</th>
+                                <th class="py-2 px-4">วงจร</th>
+                                <th class="py-2 px-4 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pricingTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 2. อุปกรณ์เสริม -->
+                <div class="glass-card rounded-2xl p-6 border border-pink-200 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 text-pink-900"><i class="fa-solid fa-box text-pink-600"></i> กำหนดราคาอุปกรณ์เสริม (ชุดตู้เหล็กนิรภัย / ชุดปลั๊ก)</h2>
+                    <form onsubmit="handleSaveAccessoryPricing(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
+                        <input type="text" id="accName" required placeholder="ชื่ออุปกรณ์ (เช่น ชุดตู้เหล็กนิรภัย, ชุดปลั๊ก)" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="accPrice" required step="0.01" placeholder="ราคา" class="px-3 py-2 border rounded-xl text-sm">
+                        <button type="submit" class="py-2 bg-pink-600 text-white rounded-xl text-sm font-bold shadow">บันทึกอุปกรณ์เสริม</button>
+                    </form>
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-xs text-slate-500 border-b">
+                                <th class="py-2 px-4">ชื่ออุปกรณ์เสริม</th>
+                                <th class="py-2 px-4">ราคา</th>
+                                <th class="py-2 px-4 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accessoryTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 3. แพ็คเกจพื้นฐาน -->
+                <div class="glass-card rounded-2xl p-6 border border-pink-200 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 text-pink-900"><i class="fa-solid fa-box-archive text-pink-600"></i> รายการ แพ็คเกจพื้นฐาน (บาท)</h2>
+                    <form onsubmit="handleSaveBasePackage(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
+                        <input type="text" id="basePkgName" required placeholder="ชื่อแพ็คเกจ" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="basePkgPrice" required step="0.01" placeholder="ราคา" class="px-3 py-2 border rounded-xl text-sm">
+                        <button type="submit" class="py-2 bg-pink-600 text-white rounded-xl text-sm font-bold shadow">บันทึกแพ็คเกจ</button>
+                    </form>
+                    <table class="w-full text-left text-sm"><tbody id="basePkgTableBody"></tbody></table>
+                </div>
+
+                <!-- 4. สายไฟ -->
+                <div class="glass-card rounded-2xl p-6 border border-pink-200 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 text-pink-900"><i class="fa-solid fa-bolt text-pink-600"></i> รายการ สายไฟ และ ราคา</h2>
+                    <form onsubmit="handleSaveWirePricing(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
+                        <input type="text" id="wireType" required placeholder="ประเภทสายไฟ" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="wirePrice" required step="0.01" placeholder="ราคาต่อเมตร" class="px-3 py-2 border rounded-xl text-sm">
+                        <button type="submit" class="py-2 bg-pink-600 text-white rounded-xl text-sm font-bold shadow">บันทึกสายไฟ</button>
+                    </form>
+                    <table class="w-full text-left text-sm"><tbody id="wireTableBody"></tbody></table>
+                </div>
+
+                <!-- 5. ระยะสาย -->
+                <div class="glass-card rounded-2xl p-6 border border-pink-200 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 text-pink-900"><i class="fa-solid fa-ruler text-pink-600"></i> รายการ ระยะสาย และ ราคา</h2>
+                    <form onsubmit="handleSaveDistancePricing(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
+                        <input type="text" id="distanceRange" required placeholder="เช่น 0 - 10 เมตร" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="distancePrice" required step="0.01" placeholder="ราคา" class="px-3 py-2 border rounded-xl text-sm">
+                        <button type="submit" class="py-2 bg-pink-600 text-white rounded-xl text-sm font-bold shadow">บันทึกระยะสาย</button>
+                    </form>
+                    <table class="w-full text-left text-sm"><tbody id="distanceTableBody"></tbody></table>
+                </div>
+
+                <!-- 6. ประกัน -->
+                <div class="glass-card rounded-2xl p-6 border border-pink-200 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 text-pink-900"><i class="fa-solid fa-shield-halved text-pink-600"></i> รายการ ประกัน และ ราคา</h2>
+                    <form onsubmit="handleSaveWarrantyPricing(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end mb-4">
+                        <input type="text" id="warrantyType" required placeholder="ประเภทประกัน" class="px-3 py-2 border rounded-xl text-sm">
+                        <input type="number" id="warrantyPrice" required step="0.01" placeholder="ราคา" class="px-3 py-2 border rounded-xl text-sm">
+                        <button type="submit" class="py-2 bg-pink-600 text-white rounded-xl text-sm font-bold shadow">บันทึกประกัน</button>
+                    </form>
+                    <table class="w-full text-left text-sm"><tbody id="warrantyTableBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- TAB 4: LOGIN LOGS (ADMIN ONLY) -->
+            <div id="tab-logs" class="hidden space-y-6">
+                <div class="glass-card rounded-2xl shadow-2xl border border-pink-200/50 p-6">
+                    <h2 class="text-lg font-bold text-slate-900 mb-4"><i class="fa-solid fa-clock-rotate-left text-pink-600"></i> ประวัติการเข้าสู่ระบบ (E-mail Login Log)</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-pink-50 border-b border-pink-100 text-xs font-bold text-pink-800 uppercase">
+                                    <th class="py-3 px-4">E-mail ผู้ใช้งาน</th>
+                                    <th class="py-3 px-4">เวลาที่เข้าสู่ระบบ</th>
+                                    <th class="py-3 px-4">สถานะบทบาท (Role)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- พิมพ์ใบงาน -->
+        <div id="printContainer" class="print-sheet"></div>
+    </div>
+
+    <!-- Modal -->
+    <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden no-print">
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full text-center space-y-3">
+            <h3 id="modalTitle" class="text-lg font-bold">สำเร็จ</h3>
+            <p id="modalMessage" class="text-sm text-slate-600">บันทึกข้อมูลเรียบร้อยแล้ว</p>
+            <button onclick="closeModal()" class="w-full py-2 bg-pink-600 text-white rounded-xl">ตกลง</button>
         </div>
     </div>
 
-    <!-- Hidden File Input for Gallery Upload -->
-    <input type="file" id="galleryFileInput" accept="image/*" class="hidden" onchange="handleGalleryFileSelected(event)">
-
-    <!-- Firebase App & Application Logic -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-        import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        const appId = 'tkp7-circuit2-app';
         const firebaseConfig = {
-            apiKey: "AIzaSyArHhVPuRrqQWGNJDJ5Vwy2ejK_JXR6GqM",
-            authDomain: "ev-charger-tkp7app.firebaseapp.com",
-            projectId: "ev-charger-tkp7app",
-            storageBucket: "ev-charger-tkp7app.firebasestorage.app",
-            messagingSenderId: "123151653183",
-            appId: "1:123151653183:web:f4efd278e8e75700d51b8a",
-            measurementId: "G-6Z2VG32RE6"
+            apiKey: "AIzaSyAMGnd8SAeLeEjSC7jYHjthLxvrhVhyaK0",
+            authDomain: "tkp7-pro.firebaseapp.com",
+            projectId: "tkp7-pro",
+            storageBucket: "tkp7-pro.firebasestorage.app",
+            messagingSenderId: "297986344649",
+            appId: "1:297986344649:web:df93a1ddaa6887488b6f18"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
+        let allCustomers = [];
+        let isFirstLoad = true;
 
-        const checklistConfig = [
-            { key: 'front_house', label: '1. รูปหน้าบ้าน', type: 'photo' },
-            { key: 'garage', label: '2. รูปโรงรถ', type: 'photo' },
-            { key: 'car', label: '3. รูปรถ', type: 'photo' },
-            { key: 'car_vin', label: '4. วินนามเบอร์รถ', type: 'photo' },
-            { key: 'meter', label: '5. หม้อมิเตอร์', type: 'photo' },
-            { key: 'customer_box_open', label: '6. ตู้ไฟบ้านลูกค้าก่อนเปิด', type: 'photo' },
-            { key: 'customer_box_inside', label: '7. ตู้ไฟบ้านลูกค้าภายใน', type: 'photo' },
-            { key: 'conduit_path_1', label: '8. ลายการเดินท่อ 1', type: 'photo' },
-            { key: 'conduit_path_2', label: '9. ลายการเดินท่อ 2', type: 'photo' },
-            { key: 'conduit_path_3', label: '10. ลายการเดินท่อ 3', type: 'photo' },
-            { key: 'conduit_path_4', label: '11. ลายการเดินท่อ 4', type: 'photo' },
-            { key: 'conduit_path_5', label: '12. ลายการเดินท่อ 5', type: 'photo' },
-            { key: 'conduit_path_6', label: '13. ลายการเดินท่อ 6', type: 'photo' },
-            { key: 'conduit_path_7', label: '14. ลายการเดินท่อ 7', type: 'photo' },
-            { key: 'full_load', label: '15. วัด Full โหลด', type: 'photo' },
-            { key: 'tech_front_house', label: '16. ช่างถ่ายหน้าบ้าน', type: 'photo' },
-            { key: 'customer_point', label: '17. ลูกค้าชี้จุดติดตั้ง', type: 'photo' },
-            { key: 'warning_sign', label: '18. อุปกรณ์ / ป้ายเตือน', type: 'photo' },
-            { key: 'box_side', label: '19. รูปข้างกล่อง', type: 'photo' },
-            { key: 'shipping_barcode', label: '20. รูปบาร์โค้ดขนส่ง', type: 'photo' },
-            { key: 'machine_card', label: '21. เครื่อง+การ์ด', type: 'photo' },
-            { key: 'machine_code', label: '22. รหัสข้างเครื่อง', type: 'photo' },
-            { key: 'torque_back', label: '23. ขันทอกค์หลังเครื่อง', type: 'photo' },
-            { key: 'mark_back', label: '24. มาร์คหลังเครื่อง', type: 'photo' },
-            { key: 'water_level', label: '25. ระดับน้ำ', type: 'photo' },
-            { key: 'breaker_equip', label: '26. อุปกรณ์ เบรกเกอร์', type: 'photo' },
-            { key: 'wire_used', label: '27. สายไฟที่ใช้', type: 'photo' },
-            { key: 'customer_main_wire', label: '28. สายเมนลูกค้า', type: 'photo' },
-            { key: 'rccb_crimp', label: '29. ย้ำหางปลา RCCB', type: 'photo' },
-            { key: 'mcb_crimp', label: '30. ย้ำหางปลา MCB', type: 'photo' },
-            { key: 'rccb_torque', label: '31. ขันทอก RCCB', type: 'photo' },
-            { key: 'rccb_mark', label: '32. มาค RCCB', type: 'photo' },
-            { key: 'mcb_torque', label: '33. ขันทอก MCB', type: 'photo' },
-            { key: 'mcb_mark', label: '34. มาค MCB', type: 'photo' },
-            { key: 'nut_left', label: '35. รูปหัวน็อตซ้าย', type: 'photo' },
-            { key: 'nut_right', label: '36. รูปหัวน๊อตขาว', type: 'photo' },
-            { key: 'ground_rod', label: '37. รูปแท่งกราว', type: 'photo' },
-            { key: 'pipe_photo', label: '38. รูปท่อ', type: 'photo' },
-            { key: 'conduit_dir_1', label: '39. แนวการเดินท่อ 1', type: 'photo' },
-            { key: 'conduit_dir_2', label: '40. แนวการเดินท่อ 2', type: 'photo' },
-            { key: 'conduit_dir_3', label: '41. แนวการเดินท่อ 3', type: 'photo' },
-            { key: 'ln_in_rccb', label: '42. L+N IN RCCB', type: 'photo' },
-            { key: 'ln_out_rccb', label: '43. L+N OUT RCCB', type: 'photo' },
-            { key: 'ln_in_mcb', label: '44. L+N IN MCB', type: 'photo' },
-            { key: 'mcb_3p_in_l1', label: '45. L1+N IN MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_in_l2', label: '46. L2+N IN MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_in_l3', label: '47. L3+N IN MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_out_l1', label: '48. L1+N OUT MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_out_l2', label: '49. L2+N OUT MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_out_l3', label: '50. L3+N OUT MCB 3 P', type: 'photo' },
-            { key: 'rccb_3p_in_l1', label: '51. L1+N IN RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_in_l2', label: '52. L2+N IN RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_in_l3', label: '53. L3+N IN RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_out_l1', label: '54. L1+N OUT RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_out_l2', label: '55. L2+N OUT RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_out_l3', label: '56. L3+N OUT RCCB 3P', type: 'photo' },
-            { key: 'ln_out_mcb', label: '57. L+N OUT MCB', type: 'photo' },
-            { key: 'lg_mcb', label: '58. L+G MCB', type: 'photo' },
-            { key: 'volts_12v', label: '59. 12 V', type: 'photo' },
-            { key: 'ground_ohm', label: '60. วัดโอร์มกราว', type: 'photo' },
-            { key: 'charger_status', label: '61. สถานะไฟเครื่องชาร์จ', type: 'photo' },
-            { key: 'install_wide_open', label: '62. ติดตั้งเสร็จแบบกว้าง (ก่อนปิดฝาตู้)', type: 'photo' },
-            { key: 'install_wide_closed', label: '63. ติดตั้งเสร็จแบบกว้าง (หลังปิดฝาตู้)', type: 'photo' },
-            { key: 'cleaning', label: '64. ทำความสะอาด', type: 'photo' },
-            { key: 'customer_sign', label: '65. ลูกค้าเซ็นเอกสาร', type: 'photo' },
-            { key: 'receive_card', label: '66. รับการ์ด', type: 'photo' },
-            { key: 'doc_page_1', label: '67. เอกสารหน้าที่ 1', type: 'photo' },
-            { key: 'doc_page_2', label: '68. เอกสารหน้าที่ 2', type: 'photo' },
-            { key: 'doc_page_3', label: '69. เอกสารหน้าที่ 3', type: 'photo' },
-            { key: 'doc_page_4', label: '70. เอกสารหน้าที่ 4', type: 'photo' },
-            { key: 'doc_page_5', label: '71. เอกสารหน้าที่ 5', type: 'photo' }
-        ];
-
-        let state = {
-            currentUser: null,
-            currentView: 'login',
-            authMode: 'login',
-            projects: [],
-            users: [
-                { username: 'admin', pin: '1234', role: 'admin', name: 'ผู้ดูแลระบบ (Admin)', status: 'approved', email: 'admin@evcharger.com', phone: '0800000000' },
-                { username: 'tech1', pin: '1234', role: 'technician', name: 'ช่างสมหมาย', status: 'approved', email: 'tech1@evcharger.com', phone: '0811111111' },
-                { username: 'tech2', pin: '1234', role: 'technician', name: 'ช่างประเสริฐ', status: 'approved', email: 'tech2@evcharger.com', phone: '0822222222' }
-            ],
-            selectedProjectId: null,
-            activeTab: 'dashboard',
-            filterStatus: 'all',
-            searchQuery: '',
-            calendarYear: new Date().getFullYear(),
-            calendarMonth: new Date().getMonth()
-        };
-
-        let cachedGlobalAddress = "กำลังดึงพิกัด GPS อัตโนมัติ...";
-        function requestGlobalGeolocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
-                    try {
-                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=th`);
-                        const data = await res.json();
-                        if (data && data.display_name) {
-                            cachedGlobalAddress = data.display_name;
-                        } else {
-                            cachedGlobalAddress = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
-                        }
-                    } catch (err) {
-                        cachedGlobalAddress = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
-                    }
-                }, () => {
-                    cachedGlobalAddress = "ไม่สามารถเข้าถึงพิกัด GPS ได้";
-                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('tkp7_logged_in') === 'true') {
+                unlockApp();
             }
-        }
+        });
 
-        const savedInitialState = localStorage.getItem('ev_charger_app_state');
-        if (savedInitialState) {
+        // ฟังก์ชันสร้างเสียงเตือน (Beep Sound)
+        function playAlertSound() {
             try {
-                const parsed = JSON.parse(savedInitialState);
-                if (parsed.currentUser) state.currentUser = parsed.currentUser;
-                if (parsed.selectedProjectId !== undefined) state.selectedProjectId = parsed.selectedProjectId;
-                if (parsed.activeTab) state.activeTab = parsed.activeTab;
-            } catch(e) {}
-        }
-
-        function initFirebaseSync() {
-            onSnapshot(collection(db, "projects"), (snapshot) => {
-                state.projects = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                render();
-            });
-
-            onSnapshot(collection(db, "users"), (snapshot) => {
-                if (!snapshot.empty) {
-                    const loadedUsers = snapshot.docs.map(doc => doc.data());
-                    if (!loadedUsers.some(u => u.username === 'admin')) {
-                        loadedUsers.push({ username: 'admin', pin: '1234', role: 'admin', name: 'ผู้ดูแลระบบ (Admin)', status: 'approved', email: 'admin@evcharger.com', phone: '0800000000' });
-                    }
-                    state.users = loadedUsers;
-                } else {
-                    state.users.forEach(async (u) => {
-                        await setDoc(doc(db, "users", u.username), u);
-                    });
-                }
-                render();
-            });
-        }
-
-        async function saveAppState() {
-            if (state.currentUser) {
-                localStorage.setItem('ev_charger_app_state', JSON.stringify({ currentUser: state.currentUser, selectedProjectId: state.selectedProjectId, activeTab: state.activeTab }));
-            }
-        }
-
-        async function saveProjectToFirestore(p) {
-            try { await setDoc(doc(db, "projects", p.id), p); } catch (err) { console.error(err); }
-        }
-
-        async function saveUserToFirestore(u) {
-            try { await setDoc(doc(db, "users", u.username), u); } catch (err) { console.error(err); }
-        }
-
-        async function deleteProjectFromFirestore(id) {
-            try { await deleteDoc(doc(db, "projects", id)); } catch (err) { console.error(err); }
-        }
-
-        async function uploadPhotoToStorage(projectId, key, dataUrl) {
-            const storageRef = ref(storage, `photos/${projectId}/${key}.jpg`);
-            await uploadString(storageRef, dataUrl, 'data_url');
-            return await getDownloadURL(storageRef);
-        }
-
-        async function deletePhotoFromStorage(projectId, key) {
-            try {
-                const storageRef = ref(storage, `photos/${projectId}/${key}.jpg`);
-                await deleteObject(storageRef);
-            } catch (err) {}
-        }
-
-        window.showMessage = function(text, iconClass = 'fa-solid fa-circle-info') {
-            document.getElementById('msgText').innerText = text;
-            document.getElementById('msgIcon').innerHTML = `<i class="${iconClass}"></i>`;
-            document.getElementById('msgModal').classList.remove('hidden');
-        }
-
-        window.closeMsgModal = function() {
-            document.getElementById('msgModal').classList.add('hidden');
-        };
-
-        function render() {
-            const app = document.getElementById('app');
-            if (!state.currentUser) {
-                app.innerHTML = renderAuthScreen();
-            } else if (!state.selectedProjectId) {
-                app.innerHTML = renderMainDashboard();
-            } else {
-                app.innerHTML = renderProjectDetail();
-            }
-        }
-
-        function renderAuthScreen() {
-            const isLogin = state.authMode === 'login';
-            return `
-            <div class="min-h-screen flex items-center justify-center p-4">
-                <div class="glass-panel rounded-[2.5rem] max-w-md w-full p-6 sm:p-10 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-                    <div class="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600"></div>
-                    <div class="text-center mb-8">
-                        <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-600/30 text-3xl font-extrabold tracking-tight">EV</div>
-                        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">EV Charger Manager</h1>
-                        <p class="text-xs text-slate-500 mt-1.5 font-medium">ระบบจัดการงานติดตั้งผ่าน Firebase Cloud</p>
-                    </div>
-
-                    <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-6 shadow-inner">
-                        <button onclick="setAuthMode('login')" class="flex-1 py-3 text-xs font-bold rounded-xl transition ${isLogin ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-900'}">เข้าสู่ระบบ</button>
-                        <button onclick="setAuthMode('register')" class="flex-1 py-3 text-xs font-bold rounded-xl transition ${!isLogin ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-900'}">สมัครสมาชิกช่าง</button>
-                    </div>
-
-                    ${isLogin ? `
-                        <form onsubmit="handleLogin(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">ชื่อผู้ใช้งาน (Username)</label>
-                                <input type="text" id="loginUser" required placeholder="กรอกชื่อผู้ใช้งาน" class="w-full px-4.5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">รหัสผ่าน / PIN</label>
-                                <input type="password" id="loginPin" required placeholder="กรอกรหัสผ่าน" class="w-full px-4.5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/30 text-sm transition mt-2 active:scale-95">เข้าสู่ระบบ</button>
-                        </form>
-                    ` : `
-                        <form onsubmit="handleRegister(event)" class="space-y-3.5">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">ชื่อผู้ใช้งาน (Username)</label>
-                                <input type="text" id="regUser" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">รหัสผ่าน / PIN</label>
-                                <input type="password" id="regPin" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">ชื่อ - นามสกุล (ช่าง)</label>
-                                <input type="text" id="regName" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">E-mail</label>
-                                <input type="email" id="regEmail" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">เบอร์โทรช่าง</label>
-                                <input type="tel" id="regPhone" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-inner">
-                            </div>
-                            <button type="submit" class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/30 text-sm transition mt-2 active:scale-95">สมัครสมาชิก</button>
-                        </form>
-                    `}
-                </div>
-            </div>`;
-        }
-
-        window.setAuthMode = function(mode) {
-            state.authMode = mode;
-            render();
-        };
-
-        window.handleLogin = function(e) {
-            e.preventDefault();
-            const u = document.getElementById('loginUser').value.trim();
-            const p = document.getElementById('loginPin').value.trim();
-            const found = state.users.find(x => x.username === u && x.pin === p);
-            if (found) {
-                if (found.status === 'pending') {
-                    showMessage('บัญชีของคุณอยู่ในสถานะ "รออนุมัติ" จากผู้ดูแลระบบ', 'fa-solid fa-clock');
-                    return;
-                }
-                state.currentUser = found;
-                saveAppState();
-                render();
-            } else {
-                showMessage('ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง', 'fa-solid fa-triangle-exclamation');
-            }
-        };
-
-        window.handleRegister = async function(e) {
-            e.preventDefault();
-            const username = document.getElementById('regUser').value.trim();
-            const pin = document.getElementById('regPin').value.trim();
-            const name = document.getElementById('regName').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-
-            if (state.users.some(x => x.username === username)) {
-                showMessage('ชื่อผู้ใช้งานนี้มีอยู่ในระบบแล้ว', 'fa-solid fa-triangle-exclamation');
-                return;
-            }
-
-            const newUser = { username, pin, role: 'technician', name, email, phone, status: 'pending' };
-            await saveUserToFirestore(newUser);
-            state.authMode = 'login';
-            render();
-            showMessage('สมัครสมาชิกสำเร็จ! บัญชีของคุณอยู่ในสถานะ "รออนุมัติ"', 'fa-solid fa-clock');
-        };
-
-        window.logout = function() {
-            state.currentUser = null;
-            state.selectedProjectId = null;
-            state.activeTab = 'dashboard';
-            localStorage.removeItem('ev_charger_app_state');
-            render();
-        };
-
-        function renderMainDashboard() {
-            const isAdmin = state.currentUser.role === 'admin';
-            const techName = state.currentUser.name;
-
-            let filteredProjects = state.projects;
-            if (!isAdmin) {
-                filteredProjects = state.projects.filter(p => p.technician === techName && p.status !== 'passed');
-            }
-
-            if (state.filterStatus !== 'all') {
-                filteredProjects = filteredProjects.filter(p => p.status === state.filterStatus);
-            }
-
-            if (state.searchQuery.trim() !== '') {
-                const q = state.searchQuery.toLowerCase();
-                filteredProjects = filteredProjects.filter(p => 
-                    p.code.toLowerCase().includes(q) || 
-                    p.customerName.toLowerCase().includes(q) || 
-                    p.customerAddress.toLowerCase().includes(q) ||
-                    p.technician.toLowerCase().includes(q)
-                );
-            }
-
-            return `
-            <header class="bg-white/90 backdrop-blur-2xl shadow-sm sticky top-0 z-30 border-b border-slate-200">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-extrabold text-white text-lg shadow-xl shadow-blue-600/30">EV</div>
-                        <div>
-                            <h1 class="font-bold text-base sm:text-lg leading-tight tracking-tight text-slate-900">EV Charger Manager</h1>
-                            <p class="text-xs text-slate-500 mt-0.5">ยินดีต้อนรับ, <span class="text-slate-900 font-semibold">${state.currentUser.name}</span> (${isAdmin ? 'Admin' : 'ช่าง'})</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center flex-wrap gap-2.5">
-                        ${isAdmin ? `<button onclick="openCreateProjectModal()" class="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-xs sm:text-sm font-bold shadow-xl shadow-blue-600/30 flex items-center gap-2 transition active:scale-95"><i class="fa-solid fa-plus"></i> สร้างโปรเจคใหม่</button>` : ''}
-                        <button onclick="logout()" class="px-4.5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition active:scale-95"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
-                    </div>
-                </div>
-                <!-- Navigation Tabs -->
-                <div class="bg-slate-50 border-t border-slate-200 px-4 sm:px-6">
-                    <div class="max-w-7xl mx-auto flex overflow-x-auto space-x-2 py-3 scrollbar-none">
-                        <button onclick="switchTab('dashboard')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-chart-pie"></i> แดชบอร์ด</button>
-                        <button onclick="switchTab('projects')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'projects' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-list-check"></i> รายการงาน (${filteredProjects.length})</button>
-                        <button onclick="switchTab('calendar')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'calendar' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-calendar-days"></i> ปฏิทิน</button>
-                        <button onclick="switchTab('photos')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'photos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-images"></i> คลังรูปภาพ</button>
-                        ${isAdmin ? `<button onclick="switchTab('users')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-users"></i> จัดการผู้ใช้</button>` : ''}
-                        <button onclick="switchTab('export')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'export' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-share-nodes"></i> ส่งออก PDF/Excel</button>
-                    </div>
-                </div>
-            </header>
-
-            <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
-                ${state.activeTab === 'dashboard' ? renderDashboardTab() : ''}
-                ${state.activeTab === 'projects' ? renderProjectsTab(filteredProjects, isAdmin) : ''}
-                ${state.activeTab === 'calendar' ? renderCalendarTab(isAdmin) : ''}
-                ${state.activeTab === 'photos' ? renderPhotosTab(isAdmin) : ''}
-                ${state.activeTab === 'users' && isAdmin ? renderUsersTab() : ''}
-                ${state.activeTab === 'export' ? renderExportTab(isAdmin) : ''}
-            </main>`;
-        }
-
-        window.switchTab = function(tab) {
-            state.activeTab = tab;
-            saveAppState();
-            render();
-        };
-
-        function getStatusMeta(status) {
-            switch(status) {
-                case 'survey': return { label: 'สำรวจงาน', bg: 'bg-purple-100', text: 'text-purple-700' };
-                case 'inprogress': return { label: 'กำลังทำ', bg: 'bg-amber-100', text: 'text-amber-700' };
-                case 'issue': return { label: 'งานติดปัญหา', bg: 'bg-rose-100', text: 'text-rose-700' };
-                case 'passed': return { label: 'ผ่าน', bg: 'bg-emerald-100', text: 'text-emerald-700' };
-                default: return { label: 'กำลังทำ', bg: 'bg-amber-100', text: 'text-amber-700' };
-            }
-        }
-
-        function renderDashboardTab() {
-            const isAdmin = state.currentUser.role === 'admin';
-            let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
-            const totalJobs = allProj.length;
-            const surveyJobs = allProj.filter(p => p.status === 'survey').length;
-            const inProgressJobs = allProj.filter(p => !p.status || p.status === 'inprogress').length;
-            const issueJobs = allProj.filter(p => p.status === 'issue').length;
-            const passedJobs = allProj.filter(p => p.status === 'passed').length;
-            const techs = isAdmin ? state.users.filter(u => u.role === 'technician') : [state.currentUser];
-
-            return `
-            <div class="space-y-8 animate-in fade-in duration-300">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
-                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-compass-drafting"></i></div>
-                        <div>
-                            <p class="text-[10px] font-semibold text-slate-400 uppercase">สำรวจงาน</p>
-                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${surveyJobs}</h3>
-                        </div>
-                    </div>
-                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
-                        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-spinner"></i></div>
-                        <div>
-                            <p class="text-[10px] font-semibold text-slate-400 uppercase">กำลังทำ</p>
-                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${inProgressJobs}</h3>
-                        </div>
-                    </div>
-                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
-                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <div>
-                            <p class="text-[10px] font-semibold text-slate-400 uppercase">งานติดปัญหา</p>
-                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${issueJobs}</h3>
-                        </div>
-                    </div>
-                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
-                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-circle-check"></i></div>
-                        <div>
-                            <p class="text-[10px] font-semibold text-slate-400 uppercase">เสร็จสิ้น</p>
-                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${passedJobs}</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-panel rounded-[2.5rem] p-8 sm:p-10 shadow-xl">
-                    <h3 class="font-bold text-xl text-slate-900 mb-6 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-users-gear"></i></div> สถิติช่าง</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${techs.map(t => {
-                            const tJobs = state.projects.filter(p => p.technician === t.name);
-                            let totalPhotos = 0;
-                            tJobs.forEach(j => totalPhotos += Object.keys(j.photos || {}).length);
-                            return `
-                            <div class="bg-white p-6 rounded-[2rem] border border-slate-200 flex flex-col justify-between shadow-sm">
-                                <div>
-                                    <div class="flex justify-between items-start mb-3">
-                                        <h4 class="font-bold text-slate-900 text-base">${t.name}</h4>
-                                        <span class="px-3.5 py-1 ${t.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-700'} text-xs font-bold rounded-xl">${t.status === 'pending' ? 'รออนุมัติ' : t.username}</span>
-                                    </div>
-                                    <p class="text-xs text-slate-500 mb-5">📧 ${t.email || '-'} | 📞 ${t.phone || '-'}</p>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3.5 pt-4 border-t border-slate-100 text-center">
-                                    <div class="bg-slate-50 p-3.5 rounded-2xl">
-                                        <span class="block text-xs text-slate-400 mb-1">งานที่รับ</span>
-                                        <span class="text-2xl font-extrabold text-blue-600">${tJobs.length}</span>
-                                    </div>
-                                    <div class="bg-slate-50 p-3.5 rounded-2xl">
-                                        <span class="block text-xs text-slate-400 mb-1">รูปภาพ</span>
-                                        <span class="text-2xl font-extrabold text-emerald-600">${totalPhotos}</span>
-                                    </div>
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            </div>`;
-        }
-
-        function renderCalendarTab(isAdmin) {
-            const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            const year = state.calendarYear;
-            const month = state.calendarMonth;
-            const firstDayIndex = new Date(year, month, 1).getDay();
-            const totalDays = new Date(year, month + 1, 0).getDate();
-
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
-
-            let calendarCells = '';
-            for (let i = 0; i < firstDayIndex; i++) {
-                calendarCells += `<div class="bg-slate-50/50 rounded-2xl min-w-[130px] min-h-[140px] p-2 border border-slate-100 opacity-45 shrink-0"></div>`;
-            }
-
-            for (let day = 1; day <= totalDays; day++) {
-                const monthStr = String(month + 1).padStart(2, '0');
-                const dayStr = String(day).padStart(2, '0');
-                const dateKey = `${year}-${monthStr}-${dayStr}`;
-                const dayProjects = projects.filter(p => p.date === dateKey);
-                const isToday = new Date().toISOString().split('T')[0] === dateKey;
-
-                calendarCells += `
-                <div class="bg-white rounded-2xl p-2.5 min-w-[130px] min-h-[150px] border ${isToday ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-200'} flex flex-col justify-between shadow-sm shrink-0">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="w-7 h-7 rounded-xl ${isToday ? 'bg-blue-600 text-white font-bold' : 'text-slate-700 font-semibold'} text-xs flex items-center justify-center">${day}</span>
-                        ${dayProjects.length > 0 ? `<span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg">${dayProjects.length} งาน</span>` : ''}
-                    </div>
-                    <div class="flex-1 space-y-1.5 overflow-y-auto max-h-[110px] scrollbar-none">
-                        ${dayProjects.map(p => {
-                            const meta = getStatusMeta(p.status);
-                            return `
-                            <div onclick="selectProject('${p.id}')" class="p-2 rounded-xl text-[11px] font-medium cursor-pointer transition border ${meta.bg} ${meta.text}">
-                                <div class="font-bold truncate flex items-center justify-between">
-                                    <span>${p.code}</span>
-                                    <span class="text-[9px] opacity-75">${p.timeStart || ''}</span>
-                                </div>
-                                <div class="truncate text-[10px] opacity-90">${p.customerName}</div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>`;
-            }
-
-            return `
-            <div class="glass-panel rounded-[2.5rem] p-6 sm:p-10 shadow-xl space-y-6">
-                <div class="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
-                    <div>
-                        <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-calendar-days"></i></div> ปฏิทินนัดหมาย</h3>
-                        <p class="text-xs text-slate-500 mt-1">${thaiMonths[month]} ${year + 543}</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <button onclick="changeCalendarMonth(-1)" class="w-11 h-11 bg-slate-100 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-chevron-left"></i></button>
-                        <span class="font-bold text-sm text-slate-800 px-4 py-2.5 bg-slate-50 rounded-2xl border">${thaiMonths[month]} ${year + 543}</span>
-                        <button onclick="changeCalendarMonth(1)" class="w-11 h-11 bg-slate-100 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                </div>
-                <div class="overflow-x-auto pb-4">
-                    <div class="min-w-[980px] grid grid-cols-7 gap-2 text-center font-bold text-xs text-slate-400 pb-2 border-b mb-2">
-                        <div class="text-rose-500">อาทิตย์</div><div>จันทร์</div><div>อังคาร</div><div>พุธ</div><div>พฤหัสบดี</div><div>ศุกร์</div><div class="text-indigo-500">เสาร์</div>
-                    </div>
-                    <div class="min-w-[980px] grid grid-cols-7 gap-2.5">${calendarCells}</div>
-                </div>
-            </div>`;
-        }
-
-        window.changeCalendarMonth = function(direction) {
-            state.calendarMonth += direction;
-            if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear++; }
-            else if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear--; }
-            render();
-        };
-
-        function renderUsersTab() {
-            return `
-            <div class="glass-panel rounded-[2.5rem] p-8 sm:p-10 shadow-xl space-y-8">
-                <div class="flex justify-between items-center pb-6 border-b border-slate-100">
-                    <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-users"></i></div> จัดการผู้ใช้งาน</h3>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${state.users.map(u => `
-                        <div class="bg-white p-6 rounded-[2rem] border border-slate-200 flex flex-col justify-between shadow-sm">
-                            <div>
-                                <div class="flex justify-between items-start mb-3">
-                                    <span class="px-3.5 py-1 bg-slate-100 font-mono font-bold text-xs rounded-xl">${u.username}</span>
-                                    <span class="px-3.5 py-1 text-xs font-bold rounded-xl ${u.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${u.status === 'approved' ? 'ใช้งานอยู่' : 'รออนุมัติ'}</span>
-                                </div>
-                                <h4 class="font-bold text-slate-900 text-base mb-1">${u.name}</h4>
-                                <p class="text-xs text-slate-500 mb-2">บทบาท: <strong class="text-blue-600">${u.role === 'admin' ? 'Admin' : 'ช่าง'}</strong></p>
-                                <p class="text-xs text-slate-500 mb-4">📧 ${u.email || '-'} | 📞 ${u.phone || '-'}</p>
-                            </div>
-                            <div class="flex items-center gap-2 pt-4 border-t border-slate-100">
-                                <button onclick="toggleUserStatus('${u.username}')" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-semibold transition">
-                                    ${u.status === 'approved' ? 'ระงับชั่วคราว' : 'อนุมัติ'}
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-
-        window.toggleUserStatus = async function(username) {
-            const u = state.users.find(x => x.username === username);
-            if (u) {
-                u.status = u.status === 'approved' ? 'pending' : 'approved';
-                await saveUserToFirestore(u);
-                render();
-            }
-        };
-
-        function renderProjectsTab(projects, isAdmin) {
-            return `
-            <div class="space-y-6">
-                <div class="glass-panel p-5 rounded-[2.5rem] shadow-xl flex items-center gap-3">
-                    <div class="relative w-full">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" value="${state.searchQuery}" placeholder="ค้นหาด้วยรหัสงาน หรือชื่อลูกค้า..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${projects.length === 0 ? `<div class="col-span-full py-24 text-center glass-panel rounded-[2.5rem]">ไม่พบโปรเจค</div>` : projects.map(p => {
-                        const photoCount = Object.keys(p.photos || {}).length;
-                        const progressPct = Math.round((photoCount / checklistConfig.length) * 100);
-                        const meta = getStatusMeta(p.status);
-                        return `
-                        <div class="glass-panel rounded-[2.5rem] p-6 shadow-xl flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between items-start mb-4">
-                                    <span class="px-4 py-1.5 bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-2xl">${p.code}</span>
-                                    <span class="px-3.5 py-1.5 text-xs font-semibold rounded-2xl ${meta.bg} ${meta.text}">${meta.label}</span>
-                                </div>
-                                <h3 class="font-bold text-slate-900 text-lg mb-1">${p.customerName}</h3>
-                                <p class="text-xs text-slate-500 mb-3">📞 <a href="tel:${p.customerPhone}" class="text-blue-600 font-semibold">${p.customerPhone}</a></p>
-                                <p class="text-xs text-slate-600 mb-3 line-clamp-2">📍 ${p.customerAddress}</p>
-                                
-                                ${p.mapLink ? `
-                                <div class="mb-3">
-                                    <a href="${p.mapLink}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition shadow-sm">
-                                        <i class="fa-solid fa-map-location-dot"></i> เปิด Google Maps นำทาง
-                                    </a>
-                                </div>` : ''}
-
-                                ${p.notes ? `
-                                <div class="mb-4 bg-amber-50 border border-amber-200/60 p-3 rounded-2xl text-xs text-amber-900">
-                                    <div class="font-bold mb-0.5 flex items-center gap-1.5"><i class="fa-solid fa-note-sticky text-amber-600"></i> หมายเหตุงาน:</div>
-                                    <p class="leading-relaxed whitespace-pre-wrap">${p.notes}</p>
-                                </div>` : ''}
-
-                                <div class="bg-slate-50 p-4 rounded-2xl mb-5 space-y-2 text-xs text-slate-600">
-                                    <div class="flex justify-between"><span>📅 นัดหมาย:</span> <strong class="text-slate-900">${p.date || '-'} (${p.timeStart || '00:00'} - ${p.timeEnd || '00:00'} น.)</strong></div>
-                                    <div class="flex justify-between"><span>👷 ช่าง:</span> <strong class="text-blue-600">${p.technician}</strong></div>
-                                </div>
-                                <div class="mb-5">
-                                    <div class="flex justify-between text-xs font-semibold mb-2"><span>ความคืบหน้า</span><span class="text-blue-600">${photoCount}/${checklistConfig.length} (${progressPct}%)</span></div>
-                                    <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden"><div class="bg-blue-600 h-full transition-all duration-500" style="width: ${progressPct}%"></div></div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3 pt-5 border-t border-slate-100">
-                                <button onclick="selectProject('${p.id}')" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold text-xs flex items-center justify-center gap-2 shadow-lg"><i class="fa-solid fa-camera"></i> จัดการรูปถ่าย</button>
-                                ${isAdmin ? `
-                                    <button onclick="openEditProjectModal('${p.id}')" class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center" title="แก้ไขงาน"><i class="fa-solid fa-pen text-sm"></i></button>
-                                    <button onclick="promptDeleteProject('${p.id}')" class="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center" title="ลบงาน"><i class="fa-solid fa-trash text-sm"></i></button>
-                                ` : ''}
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>`;
-        }
-
-        function renderPhotosTab(isAdmin) {
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
-            let allPhotosList = [];
-            projects.forEach(p => {
-                if (p.photos) {
-                    Object.keys(p.photos).forEach(key => {
-                        const conf = checklistConfig.find(c => c.key === key);
-                        allPhotosList.push({ projectCode: p.code, customerName: p.customerName, label: conf ? conf.label : key, url: p.photos[key] });
-                    });
-                }
-            });
-
-            return `
-            <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8">
-                <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-images"></i></div> คลังรูปภาพทั้งหมด (${allPhotosList.length} รูป)</h3>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    ${allPhotosList.map(item => `
-                        <div class="bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col">
-                            <div class="relative aspect-[4/3] bg-black cursor-pointer" onclick="openImageModal('${item.url}', '${item.projectCode} - ${item.label}')">
-                                <img src="${item.url}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="p-4 text-xs">
-                                <span class="font-mono font-bold text-blue-600 block mb-1">${item.projectCode}</span>
-                                <span class="font-semibold text-slate-900 line-clamp-1">${item.label}</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-
-        function renderExportTab(isAdmin) {
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
-            
-            if (state.searchQuery.trim() !== '') {
-                const q = state.searchQuery.toLowerCase();
-                projects = projects.filter(p => 
-                    p.code.toLowerCase().includes(q) || 
-                    p.customerName.toLowerCase().includes(q) || 
-                    p.technician.toLowerCase().includes(q)
-                );
-            }
-
-            return `
-            <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8 animate-in fade-in duration-300">
-                <div class="flex justify-between items-center pb-6 border-b border-slate-100">
-                    <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-share-nodes"></i></div> ส่งออกรายงาน PDF (ขนาด A3 / 6 รูปต่อหน้า - ปรับลดขนาดรูปครึ่งหนึ่ง) / Excel
-                    </h3>
-                </div>
-
-                <div class="relative w-full max-w-lg">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" oninput="state.searchQuery=this.value; render();" value="${state.searchQuery}" placeholder="ค้นหาโปรเจคเพื่อส่งออก..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    ${projects.map(p => {
-                        const meta = getStatusMeta(p.status);
-                        return `
-                        <div class="bg-white border rounded-[2.5rem] p-7 flex flex-col justify-between gap-6 shadow-sm">
-                            <div>
-                                <div class="flex justify-between items-center">
-                                    <span class="px-4 py-1.5 bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-2xl">${p.code}</span>
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
-                                </div>
-                                <h4 class="font-bold text-slate-900 text-lg mt-3 mb-1">${p.customerName}</h4>
-                                <p class="text-xs text-slate-600 mb-2">📍 ${p.customerAddress}</p>
-                                ${p.notes ? `<p class="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200/50">📝 <strong>หมายเหตุ:</strong> ${p.notes}</p>` : ''}
-                            </div>
-                            <div class="flex gap-2.5 pt-4 border-t">
-                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold hover:bg-rose-700 transition"><i class="fa-solid fa-file-pdf"></i> ปริ้น PDF (A3 - 6รูป/หน้า)</button>
-                                <button onclick="exportProjectExcel('${p.id}')" class="px-4 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-semibold hover:bg-emerald-700 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
-                                <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-semibold hover:bg-indigo-700 transition"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-            </div>`;
-        }
-
-        window.selectProject = function(id) { 
-            state.selectedProjectId = id; 
-            saveAppState(); 
-            requestGlobalGeolocation(); 
-            render(); 
-        };
-
-        window.backToMain = function() { state.selectedProjectId = null; saveAppState(); render(); };
-
-        function renderProjectDetail() {
-            const p = state.projects.find(x => x.id === state.selectedProjectId);
-            if (!p) return backToMain();
-            const isAdmin = state.currentUser.role === 'admin';
-            const photoCount = Object.keys(p.photos || {}).length;
-            const progressPct = Math.round((photoCount / checklistConfig.length) * 100);
-            const currentStatus = p.status || 'inprogress';
-
-            return `
-            <header class="bg-white/95 backdrop-blur-2xl shadow-sm sticky top-0 z-30 border-b border-slate-200">
-                <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
-                    <div class="flex items-center gap-4">
-                        <button onclick="backToMain()" class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
-                        <div>
-                            <h1 class="font-bold text-lg text-slate-900">${p.code} - ${p.customerName}</h1>
-                            <p class="text-xs text-slate-500">📍 ${p.customerAddress}</p>
-                        </div>
-                    </div>
-                    ${isAdmin ? `
-                    <div class="flex items-center gap-2">
-                        <select onchange="updateProjectStatus('${p.id}', this.value)" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="survey" ${currentStatus === 'survey' ? 'selected' : ''}>📌 สำรวจงาน</option>
-                            <option value="inprogress" ${currentStatus === 'inprogress' ? 'selected' : ''}>⚡ กำลังทำ</option>
-                            <option value="issue" ${currentStatus === 'issue' ? 'selected' : ''}>⚠️ งานติดปัญหา</option>
-                            <option value="passed" ${currentStatus === 'passed' ? 'selected' : ''}>✅ ผ่าน (Pass)</option>
-                        </select>
-                    </div>` : ''}
-                </div>
-            </header>
-
-            <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8 space-y-8">
-                <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-6">
-                    <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-list-check"></i></div> เช็คลิสต์รายการรูปภาพ (${checklistConfig.length} รายการ)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        ${checklistConfig.map((item, idx) => {
-                            const photoUrl = p.photos && p.photos[item.key];
-                            return `
-                            <div class="bg-white border rounded-[2.2rem] p-6 flex flex-col justify-between shadow-sm">
-                                <div>
-                                    <div class="flex justify-between items-center mb-3.5">
-                                        <span class="px-3 py-1 bg-slate-100 text-xs font-mono font-bold rounded-xl">#${idx + 1}</span>
-                                        ${photoUrl ? `<span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl">ถ่ายแล้ว</span>` : `<span class="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-xl">ยังไม่ถ่าย</span>`}
-                                    </div>
-                                    <h4 class="font-bold text-slate-900 text-sm mb-4">${item.label}</h4>
-                                    ${photoUrl ? `
-                                        <div class="space-y-2 mb-4">
-                                            <div class="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black cursor-pointer" onclick="openImageModal('${photoUrl}', '${item.label}')">
-                                                <img src="${photoUrl}" class="w-full h-full object-cover">
-                                            </div>
-                                            <div class="flex gap-2 pt-1">
-                                                <button onclick="openCameraModalForItem('${item.key}', '${item.label}')" class="flex-1 py-2.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold">ถ่ายใหม่</button>
-                                                <button onclick="triggerGalleryUpload('${item.key}', '${item.label}')" class="py-2.5 px-3 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold" title="แนบรูปภาพจากเครื่อง"><i class="fa-solid fa-image"></i></button>
-                                                <button onclick="deleteProjectPhoto('${p.id}', '${item.key}')" class="px-3 py-2.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold"><i class="fa-solid fa-trash"></i></button>
-                                            </div>
-                                        </div>
-                                    ` : `
-                                        <div class="space-y-2 mb-4">
-                                            <div class="aspect-[4/3] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 p-2 text-center" onclick="openCameraModalForItem('${item.key}', '${item.label}')">
-                                                <i class="fa-solid fa-camera text-2xl mb-1 text-blue-500"></i>
-                                                <span class="text-xs font-semibold text-blue-600">เปิดกล้องถ่ายภาพ</span>
-                                            </div>
-                                            <button onclick="triggerGalleryUpload('${item.key}', '${item.label}')" class="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
-                                                <i class="fa-solid fa-image"></i> แนบรูปภาพจากเครื่อง
-                                            </button>
-                                        </div>
-                                    `}
-                                </div>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>
-            </main>`;
-        }
-
-        window.updateProjectStatus = async function(id, newStatus) {
-            const p = state.projects.find(x => x.id === id);
-            if (p) {
-                p.status = newStatus;
-                await saveProjectToFirestore(p);
-                render();
-                showMessage('เปลี่ยนสถานะงานเรียบร้อยแล้ว', 'fa-solid fa-circle-check');
-            }
-        };
-
-        window.deleteProjectPhoto = async function(projectId, key) {
-            const p = state.projects.find(x => x.id === projectId);
-            if (!p) return;
-            if (p.photos && p.photos[key]) {
-                await deletePhotoFromStorage(projectId, key);
-                delete p.photos[key];
-                if (p.texts) delete p.texts[key];
-                await saveProjectToFirestore(p);
-                render();
-                showMessage('ลบรูปถ่ายสำเร็จ', 'fa-solid fa-trash');
-            }
-        };
-
-        window.handleSearchInput = function(val) { state.searchQuery = val; render(); };
-
-        window.openCreateProjectModal = function() {
-            const techSelect = document.getElementById('newProjTech');
-            techSelect.innerHTML = '<option value="">-- เลือกช่าง --</option>' + state.users.filter(u => u.role === 'technician').map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-            document.getElementById('newProjDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('createProjectModal').classList.remove('hidden');
-        };
-
-        window.closeCreateProjectModal = function() { document.getElementById('createProjectModal').classList.add('hidden'); document.getElementById('createProjectForm').reset(); };
-
-        window.handleCreateProject = async function(e) {
-            e.preventDefault();
-            const newProj = {
-                id: 'PROJ_' + Date.now(),
-                code: document.getElementById('newProjCode').value.trim(),
-                technician: document.getElementById('newProjTech').value.trim(),
-                customerName: document.getElementById('newProjCustomer').value.trim(),
-                customerPhone: document.getElementById('newProjPhone').value.trim(),
-                customerAddress: document.getElementById('newProjAddress').value.trim(),
-                mapLink: document.getElementById('newProjMap').value.trim() || 'https://maps.google.com/?q=13.7563,100.5018',
-                date: document.getElementById('newProjDate').value,
-                timeStart: document.getElementById('newProjTimeStart').value.trim(),
-                timeEnd: document.getElementById('newProjTimeEnd').value.trim(),
-                notes: document.getElementById('newProjNotes').value.trim(),
-                status: 'survey',
-                photos: {}, texts: {}, itemNotes: {}
-            };
-            await saveProjectToFirestore(newProj);
-            closeCreateProjectModal();
-            showMessage('สร้างโปรเจคใหม่สำเร็จ!', 'fa-solid fa-circle-check');
-        };
-
-        window.openEditProjectModal = function(id) {
-            const p = state.projects.find(x => x.id === id);
-            if (!p) return;
-            const techSelect = document.getElementById('editProjTech');
-            techSelect.innerHTML = '<option value="">-- เลือกช่าง --</option>' + state.users.filter(u => u.role === 'technician').map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-            document.getElementById('editProjId').value = p.id;
-            document.getElementById('editProjCode').value = p.code || '';
-            document.getElementById('editProjTech').value = p.technician || '';
-            document.getElementById('editProjCustomer').value = p.customerName || '';
-            document.getElementById('editProjPhone').value = p.customerPhone || '';
-            document.getElementById('editProjAddress').value = p.customerAddress || '';
-            document.getElementById('editProjMap').value = p.mapLink || '';
-            document.getElementById('editProjDate').value = p.date || '';
-            document.getElementById('editProjTimeStart').value = p.timeStart || '';
-            document.getElementById('editProjTimeEnd').value = p.timeEnd || '';
-            document.getElementById('editProjNotes').value = p.notes || '';
-            document.getElementById('editProjectModal').classList.remove('hidden');
-        };
-
-        window.closeEditProjectModal = function() { document.getElementById('editProjectModal').classList.add('hidden'); };
-
-        window.handleEditProject = async function(e) {
-            e.preventDefault();
-            const id = document.getElementById('editProjId').value;
-            const p = state.projects.find(x => x.id === id);
-            if (!p) return;
-            p.code = document.getElementById('editProjCode').value.trim();
-            p.technician = document.getElementById('editProjTech').value.trim();
-            p.customerName = document.getElementById('editProjCustomer').value.trim();
-            p.customerPhone = document.getElementById('editProjPhone').value.trim();
-            p.customerAddress = document.getElementById('editProjAddress').value.trim();
-            p.mapLink = document.getElementById('editProjMap').value.trim();
-            p.date = document.getElementById('editProjDate').value;
-            p.timeStart = document.getElementById('editProjTimeStart').value.trim();
-            p.timeEnd = document.getElementById('editProjTimeEnd').value.trim();
-            p.notes = document.getElementById('editProjNotes').value.trim();
-            await saveProjectToFirestore(p);
-            closeEditProjectModal();
-            showMessage('บันทึกแก้ไขสำเร็จ!', 'fa-solid fa-circle-check');
-        };
-
-        let pendingDeleteId = null;
-        window.promptDeleteProject = function(id) { pendingDeleteId = id; document.getElementById('deleteModal').classList.remove('hidden'); };
-        window.closeDeleteModal = function() { pendingDeleteId = null; document.getElementById('deleteModal').classList.add('hidden'); };
-        window.executeDeleteProject = async function() {
-            if (pendingDeleteId) {
-                await deleteProjectFromFirestore(pendingDeleteId);
-                closeDeleteModal();
-                showMessage('ลบโปรเจคเรียบร้อยแล้ว', 'fa-solid fa-trash');
-            }
-        };
-
-        let activeCameraKey = null;
-        let activeCameraLabel = null;
-        let mediaStream = null;
-        let currentFacingMode = 'environment';
-        let currentZoom = 1;
-
-        let galleryUploadKey = null;
-        window.triggerGalleryUpload = function(key, label) {
-            galleryUploadKey = key;
-            const fileInput = document.getElementById('galleryFileInput');
-            fileInput.value = '';
-            fileInput.click();
-        };
-
-        window.handleGalleryFileSelected = async function(event) {
-            const file = event.target.files[0];
-            if (!file || !galleryUploadKey) return;
-            
-            showMessage('กำลังอัปโหลดรูปภาพ...', 'fa-solid fa-spinner animate-spin');
-            
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const img = new Image();
-                img.onload = async function() {
-                    const canvas = document.createElement('canvas');
-                    const maxDim = 1280;
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
-                    else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-
-                    const p = state.projects.find(x => x.id === state.selectedProjectId);
-                    if (!p) return;
-
-                    const now = new Date();
-                    const dateStr = `${String(now.getDate()).padStart(2, '0')} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][now.getMonth()]} ${now.getFullYear() + 543}`;
-                    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 4;
-                    ctx.lineWidth = 2.5;
-                    ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
-
-                    const padding = 25;
-                    let curY = h - 75;
-
-                    ctx.font = 'bold 22px sans-serif';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.strokeText(`${timeStr}`, padding, curY);
-                    ctx.fillText(`${timeStr}`, padding, curY);
-
-                    ctx.font = 'bold 12px sans-serif';
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.strokeText(`${dateStr}`, padding + 75, curY - 5);
-                    ctx.fillText(`${dateStr}`, padding + 75, curY - 5);
-
-                    curY += 22;
-                    ctx.font = 'bold 13px sans-serif';
-                    ctx.fillStyle = '#60a5fa';
-                    ctx.strokeText(`รหัสงาน: ${p.code} | ${galleryUploadKey}`, padding, curY);
-                    ctx.fillText(`รหัสงาน: ${p.code} | ${galleryUploadKey}`, padding, curY);
-
-                    curY += 20;
-                    ctx.font = 'bold 11px sans-serif';
-                    ctx.fillStyle = '#34d399';
-                    ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
-                    ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
-
-                    ctx.shadowBlur = 0;
-
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-                    const downloadUrl = await uploadPhotoToStorage(p.id, galleryUploadKey, dataUrl);
-
-                    if (!p.photos) p.photos = {};
-                    if (!p.texts) p.texts = {};
-                    p.photos[galleryUploadKey] = downloadUrl;
-                    p.texts[galleryUploadKey] = cachedGlobalAddress;
-
-                    await saveProjectToFirestore(p);
-                    closeMsgModal();
-                    render();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.openCameraModalForItem = async function(key, label) {
-            activeCameraKey = key;
-            activeCameraLabel = label;
-            currentZoom = 1;
-            document.getElementById('cameraModal').classList.remove('hidden');
-
-            const p = state.projects.find(x => x.id === state.selectedProjectId);
-            const projCode = p ? p.code : '';
-            const now = new Date();
-            const dateStr = `${String(now.getDate()).padStart(2, '0')} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][now.getMonth()]} ${now.getFullYear() + 543}`;
-            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            document.getElementById('stampProject').innerText = `รหัสงาน: ${projCode}`;
-            document.getElementById('stampDateTime').innerText = `${timeStr}  ${dateStr}`;
-            document.getElementById('stampItem').innerText = `${label}`;
-            document.getElementById('stampAddress').innerText = `📍 ${cachedGlobalAddress}`;
-
-            requestGlobalGeolocation();
-
-            try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
-                    audio: false 
-                });
-                document.getElementById('cameraVideo').srcObject = mediaStream;
-            } catch (err) {
-                showMessage('ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การใช้งานกล้องในเบราว์เซอร์', 'fa-solid fa-triangle-exclamation');
-                closeCameraModal();
-            }
-        };
-
-        window.closeCameraModal = function() {
-            if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
-            document.getElementById('cameraModal').classList.add('hidden');
-        };
-
-        window.handleZoomChange = function(val) {
-            currentZoom = parseFloat(val);
-            const videoEl = document.getElementById('cameraVideo');
-            if (videoEl) videoEl.style.transform = `scale(${currentZoom})`;
-        };
-
-        window.switchCamera = async function() {
-            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-            if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
-            try {
-                mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: currentFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } }, 
-                    audio: false 
-                });
-                document.getElementById('cameraVideo').srcObject = mediaStream;
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        window.capturePhotoFromVideo = async function() {
-            const video = document.getElementById('cameraVideo');
-            const canvas = document.getElementById('cameraCanvas');
-            const vWidth = video.videoWidth || 1280;
-            const vHeight = video.videoHeight || 720;
-            canvas.width = vWidth;
-            canvas.height = vHeight;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, vWidth, vHeight);
-
-            const p = state.projects.find(x => x.id === state.selectedProjectId);
-            const projCode = p ? p.code : '';
-            const now = new Date();
-            const dateStr = `${String(now.getDate()).padStart(2, '0')} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][now.getMonth()]} ${now.getFullYear() + 543}`;
-            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-            ctx.shadowBlur = 4;
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
-
-            const padding = 25;
-            let curY = vHeight - 75;
-
-            ctx.font = 'bold 22px sans-serif';
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeText(`${timeStr}`, padding, curY);
-            ctx.fillText(`${timeStr}`, padding, curY);
-
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillStyle = '#fbbf24';
-            ctx.strokeText(`${dateStr}`, padding + 75, curY - 5);
-            ctx.fillText(`${dateStr}`, padding + 75, curY - 5);
-
-            curY += 22;
-            ctx.font = 'bold 13px sans-serif';
-            ctx.fillStyle = '#60a5fa';
-            ctx.strokeText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
-            ctx.fillText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
-
-            curY += 20;
-            ctx.font = 'bold 11px sans-serif';
-            ctx.fillStyle = '#34d399';
-            ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
-            ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
-
-            ctx.shadowBlur = 0;
-
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-            const downloadUrl = await uploadPhotoToStorage(p.id, activeCameraKey, dataUrl);
-
-            if (!p.photos) p.photos = {};
-            if (!p.texts) p.texts = {};
-            p.photos[activeCameraKey] = downloadUrl;
-            p.texts[activeCameraKey] = cachedGlobalAddress;
-
-            await saveProjectToFirestore(p);
-            closeCameraModal();
-            render();
-        };
-
-        window.openImageModal = function(url, caption) {
-            document.getElementById('modalImage').src = url;
-            document.getElementById('modalImageCaption').innerText = caption;
-            document.getElementById('imageModal').classList.remove('hidden');
-        };
-        window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); };
-
-        async function fetchImageAsBase64(url) {
-            try {
-                return await new Promise((resolve, reject) => {
-                    const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.onload = () => {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = img.naturalWidth;
-                        canvas.height = img.naturalHeight;
-                        const ctx = canvas.getContext("2d");
-                        ctx.drawImage(img, 0, 0);
-                        resolve(canvas.toDataURL("image/jpeg", 0.85));
-                    };
-                    img.onerror = () => reject(new Error("Image load failed"));
-                    img.src = url;
-                });
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // โน้ต A5 เสียงสูงสดใส
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4); // ดัง 0.4 วินาที
             } catch (e) {
-                try {
-                    const response = await fetch(url, { mode: 'cors' });
-                    const blob = await response.blob();
-                    return await new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(blob);
-                    });
-                } catch (err) {
-                    return null;
-                }
+                console.log("Audio Context Error:", e);
             }
         }
 
-        window.exportProjectPDF = async function(id) {
-            const p = state.projects.find(x => x.id === id);
-            if (!p) return;
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const emailField = document.getElementById('loginEmail');
+            if (!emailField) return;
+            const email = emailField.value.trim().toLowerCase();
+            sessionStorage.setItem('tkp7_logged_in', 'true');
+            sessionStorage.setItem('tkp7_user_email', email);
             
-            let hasPhotos = false;
-            if (p.photos && typeof p.photos === 'object') {
-                hasPhotos = Object.keys(p.photos).length > 0;
+            let role = 'customer';
+            if (email === 'tanthaizero@gmail.com') {
+                role = 'admin';
+            }
+            sessionStorage.setItem('tkp7_user_role', role);
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'login_logs'), {
+                    email: email,
+                    role: role,
+                    loginAt: new Date().toISOString()
+                });
+            } catch (err) {
+                console.error("Error saving login log:", err);
             }
 
-            if (!hasPhotos) {
-                showMessage('ยังไม่มีรูปภาพในโปรเจคนี้สำหรับสร้างรายงาน PDF', 'fa-solid fa-triangle-exclamation');
+            location.reload();
+        };
+
+        function unlockApp() {
+            const loginScreen = document.getElementById('loginScreen');
+            const appEl = document.getElementById('app');
+            if (loginScreen) loginScreen.classList.add('hidden');
+            if (appEl) appEl.classList.remove('hidden');
+            
+            const emailInput = document.getElementById('custEmail');
+            if (emailInput) emailInput.value = sessionStorage.getItem('tkp7_user_email') || '';
+            
+            const role = sessionStorage.getItem('tkp7_user_role');
+            if (role === 'admin') {
+                const navPricing = document.getElementById('nav-pricing');
+                if (navPricing) navPricing.classList.remove('hidden');
+                const navLogs = document.getElementById('nav-logs');
+                if (navLogs) navLogs.classList.remove('hidden');
+                loadAllPricingTables();
+            }
+            const navList = document.getElementById('nav-list');
+            if (navList) navList.classList.remove('hidden');
+            
+            initRealtimeCustomers();
+            populateFormDropdowns();
+        }
+
+        window.handleLogout = () => { sessionStorage.clear(); location.reload(); };
+
+        window.switchTab = (tab) => {
+            ['form', 'list', 'pricing', 'logs'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById(`tab-${tab}`);
+            if (target) target.classList.remove('hidden');
+            if (tab === 'list') {
+                // ซ่อนป้ายแจ้งเตือนงานใหม่เมื่อผู้ใช้กดเข้ามาดูที่หน้ารายการ
+                const alertBadge = document.getElementById('newJobAlert');
+                if (alertBadge) alertBadge.classList.add('hidden');
+            }
+            if (tab === 'pricing') loadAllPricingTables();
+            if (tab === 'logs') loadLoginLogs();
+        };
+
+        window.showModal = (title, msg) => {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMessage').textContent = msg;
+            document.getElementById('customModal').classList.remove('hidden');
+        };
+        window.closeModal = () => document.getElementById('customModal').classList.add('hidden');
+
+        async function populateFormDropdowns() {
+            try {
+                const snap1 = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'equipment_pricing_basic'));
+                let html1 = '<option value="">-- เลือกแบรนด์อุปกรณ์ --</option>';
+                snap1.forEach(d => {
+                    const item = d.data();
+                    const sumPrice = (parseFloat(item.amount) || 0) + (parseFloat(item.circuitPrice) || 0);
+                    html1 += `<option value="${item.brand}" data-price="${sumPrice}" data-image="${item.imageUrl || ''}">${item.brand} (${sumPrice.toLocaleString()} ฿)</option>`;
+                });
+                const custService = document.getElementById('custService');
+                if (custService) custService.innerHTML = html1;
+
+                const snapAcc = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'accessory_pricing_list'));
+                let htmlAcc = '';
+                let accCount = 0;
+                snapAcc.forEach(d => {
+                    const acc = d.data();
+                    accCount++;
+                    htmlAcc += `
+                        <label class="flex items-center space-x-2 text-sm cursor-pointer select-none">
+                            <input type="checkbox" name="custAccessory" value="${acc.accPrice}" data-name="${acc.accName}" onchange="handleAccessorySelection(this)" class="w-4 h-4 text-pink-600 rounded border-slate-300 focus:ring-pink-500">
+                            <span>${escapeHtml(acc.accName)} (${parseFloat(acc.accPrice).toLocaleString()} ฿)</span>
+                        </label>`;
+                });
+                const container = document.getElementById('accessoryCheckboxContainer');
+                if (container) {
+                    container.innerHTML = accCount === 0 ? '<span class="text-xs text-slate-400">ยังไม่มีรายการอุปกรณ์เสริม</span>' : htmlAcc;
+                }
+
+                const snap2 = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'wire_pricing_list'));
+                let html2 = '<option value="">-- เลือกสายไฟ --</option>';
+                snap2.forEach(d => {
+                    const w = d.data();
+                    html2 += `<option value="${w.wirePrice}" data-name="${w.wireType}" data-price="${w.wirePrice}">${w.wireType} (${w.wirePrice} ฿/เมตร)</option>`;
+                });
+                const custWire = document.getElementById('custWire');
+                if (custWire) custWire.innerHTML = html2;
+
+                const snap3 = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'warranty_pricing_list'));
+                let html3 = '<option value="0">-- เลือกประกัน --</option>';
+                snap3.forEach(d => {
+                    const war = d.data();
+                    html3 += `<option value="${war.warrantyPrice}" data-name="${war.warrantyType}">${war.warrantyType} (${war.warrantyPrice} ฿)</option>`;
+                });
+                const custWarranty = document.getElementById('custWarranty');
+                if (custWarranty) custWarranty.innerHTML = html3;
+                
+                calculateTotal();
+            } catch (err) { console.error(err); }
+        }
+
+        window.handleAccessorySelection = (checkbox) => {
+            const checkedBoxes = document.querySelectorAll('input[name="custAccessory"]:checked');
+            if (checkedBoxes.length > 3) {
+                checkbox.checked = false;
+                showModal('แจ้งเตือน', 'สามารถเลือกอุปกรณ์เสริมได้สูงสุด 3 รายการเท่านั้นครับ');
                 return;
             }
+            calculateTotal();
+        };
 
-            showMessage('กำลังสร้างรายงาน PDF (ขนาด A3 / 6 รูปต่อหน้า), กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
+        window.onEquipmentChange = () => {
+            calculateTotal();
+            const serviceSelect = document.getElementById('custService');
+            const imgContainer = document.getElementById('selectedEquipmentImageContainer');
+            const imgElement = document.getElementById('selectedEquipmentImg');
 
-            let activePhotos = [];
-            for (const item of checklistConfig) {
-                const url = p.photos && p.photos[item.key];
-                const addr = p.texts && p.texts[item.key] ? p.texts[item.key] : '-';
-                if (url) {
-                    const base64Url = await fetchImageAsBase64(url);
-                    if (base64Url) {
-                        activePhotos.push({ label: item.label, url: base64Url, addr });
+            if (serviceSelect && serviceSelect.selectedIndex > 0) {
+                const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+                const imageUrl = selectedOption.getAttribute('data-image');
+
+                if (imageUrl && imageUrl.trim() !== '') {
+                    imgElement.src = imageUrl;
+                    imgContainer.classList.remove('hidden');
+                } else {
+                    imgContainer.classList.add('hidden');
+                    imgElement.src = '';
+                }
+            } else {
+                imgContainer.classList.add('hidden');
+                imgElement.src = '';
+            }
+        };
+
+        window.calculateTotal = async () => {
+            let total = 0;
+            let basePkgSum = 0;
+            let basePkgNamesHtml = '';
+            
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'base_package_pricing'));
+                snap.forEach(d => {
+                    const p = d.data();
+                    const pVal = parseFloat(p.pkgPrice) || 0;
+                    basePkgSum += pVal;
+                    basePkgNamesHtml += `<span class="bg-white/80 px-2 py-1 rounded border border-pink-200 text-pink-800 text-xs mr-2 mb-2 inline-block">${escapeHtml(p.pkgName)}: ${pVal.toLocaleString()} ฿</span>`;
+                });
+            } catch(e) {}
+
+            const breakdownEl = document.getElementById('basePackagesBreakdown');
+            const listEl = document.getElementById('basePackagesList');
+            if (breakdownEl && listEl) {
+                breakdownEl.classList.remove('hidden');
+                listEl.innerHTML = basePkgNamesHtml;
+            }
+
+            const service = document.getElementById('custService');
+            const servicePrice = (service && service.selectedIndex > 0) ? parseFloat(service.options[service.selectedIndex].getAttribute('data-price')) || 0 : 0;
+            
+            let accessoryPrice = 0;
+            const checkedAccessories = document.querySelectorAll('input[name="custAccessory"]:checked');
+            checkedAccessories.forEach(cb => {
+                accessoryPrice += parseFloat(cb.value) || 0;
+            });
+
+            let includedDistanceLimit = 0;
+            try {
+                const snapDist = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'distance_pricing_list'));
+                snapDist.forEach(d => {
+                    const dData = d.data();
+                    const nums = dData.range.match(/\d+/g);
+                    if (nums && nums.length > 0) {
+                        const maxVal = parseInt(nums[nums.length - 1], 10);
+                        if (maxVal > includedDistanceLimit) includedDistanceLimit = maxVal;
                     }
+                });
+            } catch(e) {}
+
+            const inputDistance = parseFloat(document.getElementById('custDistanceInput')?.value) || 0;
+            const wirePricePerMeter = parseFloat(document.getElementById('custWire')?.value) || 0;
+
+            let distanceCharge = 0;
+            if (inputDistance > includedDistanceLimit && includedDistanceLimit > 0) {
+                distanceCharge = (inputDistance - includedDistanceLimit) * wirePricePerMeter;
+            } else if (includedDistanceLimit === 0 && inputDistance > 0) {
+                distanceCharge = inputDistance * wirePricePerMeter;
+            }
+
+            const warranty = document.getElementById('custWarranty');
+            const warrantyPrice = (warranty && warranty.selectedIndex > 0) ? parseFloat(warranty.value) || 0 : 0;
+
+            total = basePkgSum + servicePrice + accessoryPrice + distanceCharge + warrantyPrice;
+            
+            const display = document.getElementById('displayTotalPrice');
+            if (display) display.textContent = total.toLocaleString('th-TH', { minimumFractionDigits: 2 }) + ' บาท';
+            return total;
+        };
+
+        window.handleFormSubmit = async (e) => {
+            e.preventDefault();
+            const totalPrice = await window.calculateTotal();
+            const serviceSelect = document.getElementById('custService');
+            const wireSelect = document.getElementById('custWire');
+            const warrantySelect = document.getElementById('custWarranty');
+
+            const selectedAccNames = [];
+            document.querySelectorAll('input[name="custAccessory"]:checked').forEach(cb => {
+                selectedAccNames.push(cb.getAttribute('data-name'));
+            });
+
+            const wirePricePerMeter = wireSelect.options[wireSelect.selectedIndex] && wireSelect.selectedIndex > 0 ? parseFloat(wireSelect.options[wireSelect.selectedIndex].getAttribute('data-price')) || 0 : 0;
+            const editingId = document.getElementById('editingCustomerId').value;
+
+            const customerData = {
+                name: document.getElementById('custName').value.trim(),
+                phone: document.getElementById('custPhone').value.trim(),
+                email: sessionStorage.getItem('tkp7_user_email'),
+                recommender: document.getElementById('custRecommender').value.trim() || '-',
+                service: serviceSelect.options[serviceSelect.selectedIndex] ? serviceSelect.options[serviceSelect.selectedIndex].text : '-',
+                accessories: selectedAccNames,
+                wireBrand: wireSelect.options[wireSelect.selectedIndex] && wireSelect.selectedIndex > 0 ? wireSelect.options[wireSelect.selectedIndex].getAttribute('data-name') : '-',
+                wirePricePerMeter: wirePricePerMeter,
+                distance: document.getElementById('custDistanceInput').value.trim(),
+                warranty: warrantySelect.options[warrantySelect.selectedIndex] && warrantySelect.selectedIndex > 0 ? warrantySelect.options[warrantySelect.selectedIndex].getAttribute('data-name') : '-',
+                address: document.getElementById('custAddress').value.trim(),
+                totalPrice: totalPrice,
+                installStatus: 'งานใหม่'
+            };
+
+            if (editingId) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers_circuit_2', editingId);
+                await updateDoc(docRef, customerData);
+                showModal('อัปเดตสำเร็จ!', 'ข้อมูลลูกค้าถูกแก้ไขเรียบร้อยแล้ว');
+                resetFormMode();
+            } else {
+                customerData.createdAt = new Date().toISOString();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'customers_circuit_2'), customerData);
+                showModal('บันทึกสำเร็จ!', 'ข้อมูลลูกค้าถูกบันทึกลงระบบเรียบร้อย');
+                document.getElementById('customerForm').reset();
+                document.querySelectorAll('input[name="custAccessory"]').forEach(cb => cb.checked = false);
+                document.getElementById('custEmail').value = sessionStorage.getItem('tkp7_user_email');
+                document.getElementById('selectedEquipmentImageContainer').classList.add('hidden');
+            }
+            switchTab('list');
+        };
+
+        // ฟังก์ชันรับข้อมูลแบบ Real-time และตรวจจับงานใหม่เพื่อส่งเสียงแจ้งเตือน
+        function initRealtimeCustomers() {
+            const role = sessionStorage.getItem('tkp7_user_role');
+            const email = sessionStorage.getItem('tkp7_user_email');
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'customers_circuit_2'), (snapshot) => {
+                let list = [];
+                snapshot.forEach(d => {
+                    const data = d.data();
+                    if (role === 'admin' || data.email === email) {
+                        list.push({ id: d.id, ...data });
+                    }
+                });
+                list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+                // ตรวจสอบว่ามีงานเพิ่มขึ้นใหม่หรือไม่ (หลังจากโหลดครั้งแรกผ่านไปแล้ว)
+                if (!isFirstLoad && list.length > allCustomers.length) {
+                    playAlertSound(); // เล่นเสียงเตือน
+                    const alertBadge = document.getElementById('newJobAlert');
+                    if (alertBadge) alertBadge.classList.remove('hidden');
+                }
+
+                allCustomers = list;
+                isFirstLoad = false;
+                renderCustomerTable(list);
+            });
+        }
+
+        function renderCustomerTable(list) {
+            const role = sessionStorage.getItem('tkp7_user_role');
+            const tbody = document.getElementById('customerTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = list.length === 0 ? '<tr><td colspan="6" class="py-4 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>' : '';
+            
+            list.forEach(cust => {
+                let accDisplay = '';
+                if (cust.accessories && cust.accessories.length > 0) {
+                    accDisplay = `<br><span class="text-xs text-pink-600">+ ${cust.accessories.join(', ')}</span>`;
+                }
+
+                const currentStatus = cust.installStatus || 'งานใหม่';
+                let statusField = '';
+
+                let selectStyle = 'bg-amber-50 text-amber-800 border-amber-200';
+                if (currentStatus === 'รอลูกค้าตัดสินใจ') selectStyle = 'bg-blue-50 text-blue-800 border-blue-200';
+                else if (currentStatus === 'OK กับราคา พร้อมติดตั้ง') selectStyle = 'bg-purple-50 text-purple-800 border-purple-200';
+                else if (currentStatus === 'ติดตั้งแล้ว') selectStyle = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+
+                if (role === 'admin') {
+                    statusField = `
+                        <select onchange="changeCustomerStatus('${cust.id}', this.value)" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold border ${selectStyle} transition focus:ring-2 focus:ring-pink-500 cursor-pointer">
+                            <option value="งานใหม่" ${currentStatus === 'งานใหม่' ? 'selected' : ''}>งานใหม่</option>
+                            <option value="รอลูกค้าตัดสินใจ" ${currentStatus === 'รอลูกค้าตัดสินใจ' ? 'selected' : ''}>รอลูกค้าตัดสินใจ</option>
+                            <option value="OK กับราคา พร้อมติดตั้ง" ${currentStatus === 'OK กับราคา พร้อมติดตั้ง' ? 'selected' : ''}>OK กับราคา พร้อมติดตั้ง</option>
+                            <option value="ติดตั้งแล้ว" ${currentStatus === 'ติดตั้งแล้ว' ? 'selected' : ''}>ติดตั้งแล้ว</option>
+                        </select>`;
+                } else {
+                    statusField = `<span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${selectStyle}">${currentStatus}</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-3 px-4 font-semibold">${escapeHtml(cust.name)}<br><span class="text-xs text-slate-500">${escapeHtml(cust.phone)}</span></td>
+                        <td class="py-3 px-4 text-slate-700">${escapeHtml(cust.recommender || '-')}</td>
+                        <td class="py-3 px-4">${statusField}</td>
+                        <td class="py-3 px-4">${escapeHtml(cust.service)}${accDisplay}</td>
+                        <td class="py-3 px-4 font-bold text-pink-700">${Number(cust.totalPrice).toLocaleString()} ฿</td>
+                        <td class="py-3 px-4 text-center space-x-2">
+                            <button onclick="printSpecificCustomer('${cust.id}')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium"><i class="fa-solid fa-print"></i> พิมพ์</button>
+                            ${role === 'admin' ? `
+                                <button onclick="editCustomer('${cust.id}')" class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-xs font-medium"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button>
+                                <button onclick="deleteCust('${cust.id}')" class="px-2 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
+                            ` : ''}
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        window.loadLoginLogs = async () => {
+            const tbody = document.getElementById('logsTableBody');
+            if (!tbody) return;
+            let logsList = [];
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'login_logs'));
+                snap.forEach(d => {
+                    logsList.push(d.data());
+                });
+            } catch (err) {
+                console.error("Error loading logs:", err);
+            }
+            logsList.sort((a, b) => new Date(b.loginAt || 0) - new Date(a.loginAt || 0));
+
+            tbody.innerHTML = logsList.length === 0 ? '<tr><td colspan="3" class="py-4 text-center text-slate-400">ยังไม่มีประวัติการเข้าสู่ระบบ</td></tr>' : '';
+            logsList.forEach(log => {
+                const timeStr = log.loginAt ? new Date(log.loginAt).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'medium' }) : '-';
+                const roleBadge = log.role === 'admin' ? '<span class="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-full text-xs font-semibold">Admin</span>' : '<span class="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">Customer</span>';
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-3 px-4 font-semibold text-slate-800">${escapeHtml(log.email)}</td>
+                        <td class="py-3 px-4 text-slate-600 text-xs">${timeStr}</td>
+                        <td class="py-3 px-4">${roleBadge}</td>
+                    </tr>`;
+            });
+        };
+
+        window.changeCustomerStatus = async (id, newStatus) => {
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers_circuit_2', id);
+                await updateDoc(docRef, { installStatus: newStatus });
+            } catch (err) {
+                console.error("Error updating status:", err);
+                showModal('เกิดข้อผิดพลาด', 'ไม่สามารถเปลี่ยนสถานะได้');
+            }
+        };
+
+        window.editCustomer = (id) => {
+            const cust = allCustomers.find(c => c.id === id);
+            if (!cust) return;
+
+            switchTab('form');
+            document.getElementById('editingCustomerId').value = cust.id;
+            document.getElementById('formTitle').textContent = 'แก้ไขข้อมูลใบงานลูกค้า';
+            document.getElementById('formSubtitle').textContent = `กำลังแก้ไขข้อมูลของ: ${cust.name}`;
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            document.getElementById('custName').value = cust.name || '';
+            document.getElementById('custPhone').value = cust.phone || '';
+            document.getElementById('custEmail').value = cust.email || sessionStorage.getItem('tkp7_user_email');
+            document.getElementById('custRecommender').value = cust.recommender !== '-' ? cust.recommender : '';
+            document.getElementById('custAddress').value = cust.address || '';
+            
+            const serviceSelect = document.getElementById('custService');
+            for (let i = 0; i < serviceSelect.options.length; i++) {
+                if (serviceSelect.options[i].text.includes(cust.service.split(' ')[0])) {
+                    serviceSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            onEquipmentChange();
+
+            document.querySelectorAll('input[name="custAccessory"]').forEach(cb => {
+                const accName = cb.getAttribute('data-name');
+                if (cust.accessories && cust.accessories.includes(accName)) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = false;
+                }
+            });
+
+            const wireSelect = document.getElementById('custWire');
+            for (let i = 0; i < wireSelect.options.length; i++) {
+                if (wireSelect.options[i].getAttribute('data-name') === cust.wireBrand) {
+                    wireSelect.selectedIndex = i;
+                    break;
                 }
             }
 
-            if (activePhotos.length === 0) {
-                closeMsgModal();
-                showMessage('ไม่สามารถโหลดไฟล์รูปภาพได้ กรุณาตรวจสอบอินเทอร์เน็ต', 'fa-solid fa-triangle-exclamation');
-                return;
+            const rawDist = (cust.distance || '').replace(/เมตร/g, '').trim();
+            document.getElementById('custDistanceInput').value = rawDist;
+
+            const warSelect = document.getElementById('custWarranty');
+            for (let i = 0; i < warSelect.options.length; i++) {
+                if (warSelect.options[i].getAttribute('data-name') === cust.warranty) {
+                    warSelect.selectedIndex = i;
+                    break;
+                }
             }
 
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'absolute';
-            wrapper.style.left = '-9999px';
-            wrapper.style.width = '1122px';
-            wrapper.style.background = '#ffffff';
+            calculateTotal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
-            const meta = getStatusMeta(p.status);
+        window.resetFormMode = () => {
+            document.getElementById('editingCustomerId').value = '';
+            document.getElementById('formTitle').textContent = 'ฟอร์มบันทึกข้อมูลลูกค้าใหม่';
+            document.getElementById('formSubtitle').textContent = 'กรอกรายละเอียดข้อมูลลูกค้าเพื่อบันทึกและพิมพ์ใบงาน';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            document.getElementById('customerForm').reset();
+            document.querySelectorAll('input[name="custAccessory"]').forEach(cb => cb.checked = false);
+            document.getElementById('custEmail').value = sessionStorage.getItem('tkp7_user_email');
+            document.getElementById('selectedEquipmentImageContainer').classList.add('hidden');
+            calculateTotal();
+        };
 
-            let pagesHtml = '';
-            for (let i = 0; i < activePhotos.length; i += 6) {
-                const chunk = activePhotos.slice(i, i + 6);
-                let chunkCards = '';
-                chunk.forEach(photo => {
-                    chunkCards += `
-                    <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 230px; box-sizing: border-box; page-break-inside: avoid;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
-                        <div style="width: 100%; height: 170px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 6px; display: flex; align-items: center; justify-content: center;">
-                            <img src="${photo.url}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
-                        </div>
-                        <div style="font-size: 10px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
+        window.printSpecificCustomer = async (id) => {
+            const cust = allCustomers.find(c => c.id === id);
+            if (cust) {
+                await generatePrintHTML(cust);
+                window.print();
+            }
+        };
+
+        async function generatePrintHTML(cust) {
+            const nowStr = new Date().toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' });
+            
+            let includedDistanceLimit = 0;
+            let freeDistanceText = 'ระยะสายไฟฟรี';
+            try {
+                const snapDist = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'distance_pricing_list'));
+                snapDist.forEach(d => {
+                    const dData = d.data();
+                    if (dData.range) {
+                        let rangeStr = dData.range.trim();
+                        if (!rangeStr.endsWith('เมตร')) {
+                            rangeStr += ' เมตร';
+                        }
+                        freeDistanceText = `ระยะสายไฟฟรี ${rangeStr}`;
+                        const nums = rangeStr.match(/\d+/g);
+                        if (nums && nums.length > 0) {
+                            const maxVal = parseInt(nums[nums.length - 1], 10);
+                            if (maxVal > includedDistanceLimit) includedDistanceLimit = maxVal;
+                        }
+                    }
+                });
+            } catch (e) {}
+
+            let wireRate = parseFloat(cust.wirePricePerMeter) || 0;
+            if (wireRate === 0 && cust.wireBrand) {
+                try {
+                    const snapWire = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'wire_pricing_list'));
+                    snapWire.forEach(d => {
+                        const wData = d.data();
+                        if (cust.wireBrand.includes(wData.wireType)) {
+                            wireRate = parseFloat(wData.wirePrice) || 0;
+                        }
+                    });
+                } catch(e) {}
+            }
+
+            let rawDistStr = (cust.distance || '0').replace(/เมตร/g, '').trim();
+            const custDistNum = parseFloat(rawDistStr) || 0;
+
+            let pipeCharge = 0;
+            if (custDistNum > includedDistanceLimit && includedDistanceLimit > 0) {
+                pipeCharge = (custDistNum - includedDistanceLimit) * wireRate;
+            } else if (includedDistanceLimit === 0 && custDistNum > 0) {
+                pipeCharge = custDistNum * wireRate;
+            }
+
+            const pipeChargeDisplay = pipeCharge > 0 ? `${pipeCharge.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท` : 'รวมในระบบ';
+
+            let accPrintRows = '';
+            if (cust.accessories && cust.accessories.length > 0) {
+                cust.accessories.forEach(acc => {
+                    accPrintRows += `
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> อุปกรณ์เสริม:</span>
+                        <strong>${escapeHtml(acc)}</strong>
                     </div>`;
                 });
+            }
 
-                pagesHtml += `
-                <div style="width: 1122px; height: 1587px; background: #ffffff; padding: 40px; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column;">
-                    <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 25px; height: 75px; box-sizing: border-box;">
-                        <h1 style="font-size: 22px; font-weight: bold; color: #1e293b; margin: 0 0 6px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (ขนาดกระดาษ A3 - หน้า ${Math.floor(i/6) + 1})</h1>
-                        <div style="font-size: 14px; color: #475569; display: flex; justify-content: space-between;">
-                            <div><strong>รหัสงาน:</strong> ${p.code} | <strong>ลูกค้า:</strong> ${p.customerName} | <strong>สถานะ:</strong> <span style="font-weight: bold;">${meta.label}</span></div>
-                            <div><strong>วันที่:</strong> ${p.date}</div>
+            const html = `
+                <div style="font-family: 'Prompt', sans-serif; color: #000; padding: 15px; max-width: 800px; margin: auto; background: white;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="font-size: 26px; font-weight: bold; margin: 0; color: #000;">TKP7 Pro Solutions</h2>
+                        <p style="font-size: 15px; font-weight: bold; color: #db2777; margin: 4px 0;">ใบรายละเอียดการติดตั้งวงจรที่ 2</p>
+                        <p style="font-size: 12px; color: #555; margin: 0;">วันที่ออกเอกสาร: ${nowStr}</p>
+                    </div>
+
+                    <div style="margin-bottom: 12px; font-size: 14px; display: flex; justify-content: space-between;">
+                        <div><strong>ชื่อลูกค้า:</strong> ${escapeHtml(cust.name)}</div>
+                        <div><strong>เบอร์โทร:</strong> ${escapeHtml(cust.phone)}</div>
+                    </div>
+                    <div style="margin-bottom: 12px; font-size: 14px;"><strong>ชื่อผู้แนะนำ:</strong> ${escapeHtml(cust.recommender || '-')}</div>
+                    <div style="margin-bottom: 12px; font-size: 14px;"><strong>สถานะติดตั้ง:</strong> ${escapeHtml(cust.installStatus || 'งานใหม่')}</div>
+                    <div style="margin-bottom: 20px; font-size: 14px;"><strong>ที่อยู่:</strong> ${escapeHtml(cust.address)}</div>
+
+                    <div style="font-size: 15px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 5px;">หัวข้ออุปกรณ์ที่ลูกค้าได้รับ</div>
+
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> แบรนด์อุปกรณ์:</span>
+                        <strong>${escapeHtml(cust.service)}</strong>
+                    </div>
+                    ${accPrintRows}
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> ท่อเดินสายไฟ ตามแนวระยะจริงหน้างาน (ระยะสาย: ${custDistNum} เมตร):</span>
+                        <strong>${pipeChargeDisplay}</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> ${freeDistanceText}:</span>
+                        <strong style="color: #16a34a;">ฟรี</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> อุปกรณ์การยืดสายไฟ พร้อมหัวกันน้ำ:</span>
+                        <strong>ฟรี / รวมติดตั้ง</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> ลงกราว 5/8 2.40m:</span>
+                        <strong>รวมอุปกรณ์และติดตั้ง</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> จั้มไฟให้ (เฉพาะตามหน้างาน):</span>
+                        <strong>รวมบริการ</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> อุปกรณ์ ดับเพลิงฉุกเฉิน (ฟรี):</span>
+                        <strong style="color: #16a34a;">ฟรี</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 1px solid #e2e8f0; padding: 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> ยี่ห้อสายไฟ (ประเภทสายไฟ):</span>
+                        <strong>${escapeHtml(cust.wireBrand || '-')}</strong>
+                    </div>
+                    <div style="font-size: 13px; border-bottom: 2px solid #000; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <span><span style="color: #16a34a; font-weight: bold; margin-right: 5px;">✓</span> ประกัน:</span>
+                        <strong>${escapeHtml(cust.warranty || '-')}</strong>
+                    </div>
+
+                    <div style="border: 2px solid #fbcfe8; background: #fff1f2; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="font-size: 18px; font-weight: bold; color: #831843;">ราคารวมทั้งสิ้นสุทธิ</span>
+                        <span style="font-size: 22px; font-weight: bold; color: #db2777;">${Number(cust.totalPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท</span>
+                    </div>
+
+                    <div style="border: 1px solid #fef08a; background: #fefce8; border-radius: 8px; padding: 12px; margin-bottom: 30px; font-size: 11px; color: #854d0e; display: flex; gap: 8px; align-items: flex-start;">
+                        <span style="font-size: 14px;">⚠️</span>
+                        <span><strong>หมายเหตุ:</strong> ระยะสายไฟ หากเกินจากที่ลูกค้าลงทะเบียนไว้จากหน้างานจริง ให้เก็บค่าสายไฟเพิ่มตามราคาไฟสายที่เลือกไว้ต่อเมตร</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 13px; text-align: center;">
+                        <div style="width: 45%;">
+                            <div style="margin-bottom: 5px;">ลงชื่อ............................................................. ผู้ให้บริการ</div>
+                            <div style="margin-top: 25px;">( ............................................................. )</div>
+                        </div>
+                        <div style="width: 45%;">
+                            <div style="margin-bottom: 5px;">ลงชื่อ............................................................. ลูกค้าผู้รับบริการ</div>
+                            <div style="margin-top: 25px;">( ............................................................. )</div>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-content: start; height: 1400px; box-sizing: border-box;">
-                        ${chunkCards}
-                    </div>
                 </div>`;
+            document.getElementById('printContainer').innerHTML = html;
+        }
+
+        window.deleteCust = async (id) => {
+            if (confirm("ต้องการลบข้อมูลนี้ใช่หรือไม่?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'customers_circuit_2', id));
             }
+        };
 
-            wrapper.innerHTML = pagesHtml;
-            document.body.appendChild(wrapper);
+        window.loadAllPricingTables = async () => {
+            if (sessionStorage.getItem('tkp7_user_role') !== 'admin') return;
+            loadTableData('equipment_pricing_basic', 'pricingTableBody', item => `
+                <tr>
+                    <td class="py-2 px-4">${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" class="w-10 h-10 object-cover rounded-lg border">` : '<span class="text-xs text-slate-400">ไม่มีรูป</span>'}</td>
+                    <td class="py-2 px-4 font-semibold">${escapeHtml(item.brand)}</td>
+                    <td class="py-2 px-4">${item.amount} ฿</td>
+                    <td class="py-2 px-4">${item.circuitPrice} ฿</td>
+                    <td class="py-2 px-4 text-center"><button onclick="deletePricingItem('equipment_pricing_basic','${item.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`);
+            loadTableData('accessory_pricing_list', 'accessoryTableBody', item => `
+                <tr>
+                    <td class="py-2 px-4 font-semibold">${escapeHtml(item.accName)}</td>
+                    <td class="py-2 px-4">${item.accPrice} ฿</td>
+                    <td class="py-2 px-4 text-center"><button onclick="deletePricingItem('accessory_pricing_list','${item.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`);
+            loadTableData('base_package_pricing', 'basePkgTableBody', item => `<tr><td class="py-2 px-4">${escapeHtml(item.pkgName)}</td><td class="py-2 px-4">${item.pkgPrice} ฿</td><td class="py-2 px-4 text-center"><button onclick="deletePricingItem('base_package_pricing','${item.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            loadTableData('wire_pricing_list', 'wireTableBody', item => `<tr><td class="py-2 px-4">${escapeHtml(item.wireType)}</td><td class="py-2 px-4">${item.wirePrice} ฿</td><td class="py-2 px-4 text-center"><button onclick="deletePricingItem('wire_pricing_list','${item.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            loadTableData('distance_pricing_list', 'distanceTableBody', item => `<tr><td class="py-2 px-4">${escapeHtml(item.range)}</td><td class="py-2 px-4">${item.price} ฿</td><td class="py-2 px-4 text-center"><button onclick="deletePricingItem('distance_pricing_list','${item.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+            loadTableData('warranty_pricing_list', 'warrantyTableBody', item => `<tr><td class="py-2 px-4">${escapeHtml(item.warrantyType)}</td><td class="py-2 px-4">${item.warrantyPrice} ฿</td><td class="py-2 px-4 text-center"><button onclick="deletePricingItem('warranty_pricing_list','${item.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`);
+        };
 
+        async function loadTableData(colName, tbodyId, rowCallback) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            let html = '';
             try {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a3');
-                const pageDivs = wrapper.children;
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', colName));
+                snap.forEach(d => { html += rowCallback(d.data()); });
+            } catch(e) {}
+            tbody.innerHTML = html || '<tr><td colspan="5" class="py-3 text-center text-slate-400">ยังไม่มีข้อมูล</td></tr>';
+        }
 
-                for (let idx = 0; idx < pageDivs.length; idx++) {
-                    const canvas = await html2canvas(pageDivs[idx], { scale: 1.5, useCORS: true, allowTaint: true });
-                    const imgData = canvas.toDataURL('image/jpeg', 0.85);
-                    if (idx > 0) pdf.addPage();
-                    pdf.addImage(imgData, 'JPEG', 0, 0, 297, 420);
-                }
-
-                pdf.save(`EV_Report_A3_${p.code}.pdf`);
-                closeMsgModal();
-            } catch (err) {
-                console.error(err);
-                closeMsgModal();
-                showMessage('เกิดข้อผิดพลาดในการสร้างไฟล์ PDF', 'fa-solid fa-triangle-exclamation');
-            }
-            document.body.removeChild(wrapper);
+        window.handleSavePricing = async (e) => { 
+            e.preventDefault(); 
+            await saveItem('equipment_pricing_basic', document.getElementById('priceBrand').value, { 
+                brand: document.getElementById('priceBrand').value, 
+                amount: parseFloat(document.getElementById('priceAmount').value), 
+                circuitPrice: parseFloat(document.getElementById('priceCircuit').value),
+                imageUrl: document.getElementById('priceImage').value.trim()
+            }); 
         };
-
-        window.exportProjectExcel = function(id) {
-            const p = state.projects.find(x => x.id === id);
-            if (!p) return;
-            const meta = getStatusMeta(p.status);
-            const data = checklistConfig.map((item, idx) => ({ 'ลำดับ': idx + 1, 'หัวข้อ': item.label, 'สถานะภาพถ่าย': p.photos && p.photos[item.key] ? 'ถ่ายแล้ว' : 'ยังไม่ถ่าย', 'สถานะงาน': meta.label }));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Checklist");
-            XLSX.writeFile(wb, `EV_Checklist_${p.code}.xlsx`);
-        };
-
-        window.exportProjectZIP = async function(id) {
-            const p = state.projects.find(x => x.id === id);
-            if (!p || !p.photos || Object.keys(p.photos).length === 0) { 
-                showMessage('ไม่พบรูปภาพในโปรเจคนี้', 'fa-solid fa-triangle-exclamation'); 
-                return; 
-            }
-            
-            showMessage('กำลังเตรียมไฟล์ ZIP...', 'fa-solid fa-spinner animate-spin');
-            
-            const zip = new JSZip();
-            const folder = zip.folder(`EV_${p.code}_Photos`);
-            const keys = Object.keys(p.photos);
-
-            const promises = keys.map(async (key) => {
-                const conf = checklistConfig.find(c => c.key === key);
-                const rawLabel = conf ? conf.label : key;
-                const idx = checklistConfig.findIndex(c => c.key === key) + 1;
-                
-                const safeLabel = rawLabel.replace(/[\/\\:\*\?"<>\|]/g, '_');
-                const fileName = `${idx}_${safeLabel}.jpg`;
-                
-                const url = p.photos[key];
-                
-                try {
-                    const base64 = await fetchImageAsBase64(url);
-                    if (base64) {
-                        const base64Data = base64.split(',')[1];
-                        folder.file(fileName, base64Data, { base64: true });
-                    }
-                } catch (e) {
-                    console.warn(`Could not load image for ${fileName}:`, e);
-                }
+        window.handleSaveAccessoryPricing = async (e) => {
+            e.preventDefault();
+            await saveItem('accessory_pricing_list', document.getElementById('accName').value, {
+                accName: document.getElementById('accName').value,
+                accPrice: parseFloat(document.getElementById('accPrice').value)
             });
+        };
+        window.handleSaveBasePackage = async (e) => { e.preventDefault(); await saveItem('base_package_pricing', document.getElementById('basePkgName').value, { pkgName: document.getElementById('basePkgName').value, pkgPrice: parseFloat(document.getElementById('basePkgPrice').value) }); };
+        window.handleSaveWirePricing = async (e) => { e.preventDefault(); await saveItem('wire_pricing_list', document.getElementById('wireType').value, { wireType: document.getElementById('wireType').value, wirePrice: parseFloat(document.getElementById('wirePrice').value) }); };
+        window.handleSaveDistancePricing = async (e) => { e.preventDefault(); await saveItem('distance_pricing_list', document.getElementById('distanceRange').value, { range: document.getElementById('distanceRange').value, price: parseFloat(document.getElementById('distancePrice').value) }); };
+        window.handleSaveWarrantyPricing = async (e) => { e.preventDefault(); await saveItem('warranty_pricing_list', document.getElementById('warrantyType').value, { warrantyType: document.getElementById('warrantyType').value, warrantyPrice: parseFloat(document.getElementById('warrantyPrice').value) }); };
 
-            await Promise.allSettled(promises);
+        async function saveItem(colName, keyName, dataObj) {
+            const id = keyName.replace(/[^a-zA-Z0-9ก-ฮ]/g, '_');
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', colName, id), { id, ...dataObj, updatedAt: new Date().toISOString() });
+            showModal('บันทึกสำเร็จ', 'บันทึกข้อมูลเรียบร้อยแล้ว');
+            loadAllPricingTables();
+            populateFormDropdowns();
+        }
 
-            try {
-                const content = await zip.generateAsync({ type: 'blob' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(content);
-                link.download = `EV_Photos_${p.code}.zip`;
-                link.click();
-                closeMsgModal();
-            } catch (err) {
-                console.error(err);
-                closeMsgModal();
-                showMessage('เกิดข้อผิดพลาดในการสร้างไฟล์ ZIP', 'fa-solid fa-triangle-exclamation');
-            }
+        window.deletePricingItem = async (colName, id) => {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', colName, id));
+            loadAllPricingTables();
+            populateFormDropdowns();
         };
 
-        window.onload = function() {
-            initFirebaseSync();
-            requestGlobalGeolocation(); 
-            render();
-        };
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
     </script>
 </body>
 </html>
