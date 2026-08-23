@@ -852,10 +852,16 @@
                                 <p class="text-xs text-slate-600 mb-3 line-clamp-2">📍 ${p.customerAddress}</p>
                                 
                                 ${p.mapLink ? `
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <a href="${p.mapLink}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition shadow-sm">
                                         <i class="fa-solid fa-map-location-dot"></i> เปิด Google Maps นำทาง
                                     </a>
+                                </div>` : ''}
+
+                                ${p.notes ? `
+                                <div class="mb-4 bg-amber-50 border border-amber-200/60 p-3 rounded-2xl text-xs text-amber-900">
+                                    <div class="font-bold mb-0.5 flex items-center gap-1.5"><i class="fa-solid fa-note-sticky text-amber-600"></i> หมายเหตุงาน:</div>
+                                    <p class="leading-relaxed whitespace-pre-wrap">${p.notes}</p>
                                 </div>` : ''}
 
                                 <div class="bg-slate-50 p-4 rounded-2xl mb-5 space-y-2 text-xs text-slate-600">
@@ -947,7 +953,8 @@
                                     <span class="px-3 py-1 text-xs font-semibold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
                                 </div>
                                 <h4 class="font-bold text-slate-900 text-lg mt-3 mb-1">${p.customerName}</h4>
-                                <p class="text-xs text-slate-600">📍 ${p.customerAddress}</p>
+                                <p class="text-xs text-slate-600 mb-2">📍 ${p.customerAddress}</p>
+                                ${p.notes ? `<p class="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200/50">📝 <strong>หมายเหตุ:</strong> ${p.notes}</p>` : ''}
                             </div>
                             <div class="flex gap-2.5 pt-4 border-t">
                                 <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold hover:bg-rose-700 transition"><i class="fa-solid fa-file-pdf"></i> ปริ้น PDF (A3 - 6รูป/หน้า)</button>
