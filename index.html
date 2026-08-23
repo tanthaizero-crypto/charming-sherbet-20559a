@@ -630,36 +630,55 @@
             render();
         };
 
+        function getStatusMeta(status) {
+            switch(status) {
+                case 'survey': return { label: 'สำรวจงาน', bg: 'bg-purple-100', text: 'text-purple-700' };
+                case 'inprogress': return { label: 'กำลังทำ', bg: 'bg-amber-100', text: 'text-amber-700' };
+                case 'issue': return { label: 'งานติดปัญหา', bg: 'bg-rose-100', text: 'text-rose-700' };
+                case 'passed': return { label: 'ผ่าน', bg: 'bg-emerald-100', text: 'text-emerald-700' };
+                default: return { label: 'กำลังทำ', bg: 'bg-amber-100', text: 'text-amber-700' };
+            }
+        }
+
         function renderDashboardTab() {
             const isAdmin = state.currentUser.role === 'admin';
             let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
             const totalJobs = allProj.length;
-            const inProgressJobs = allProj.filter(p => p.status === 'inprogress').length;
+            const surveyJobs = allProj.filter(p => p.status === 'survey').length;
+            const inProgressJobs = allProj.filter(p => !p.status || p.status === 'inprogress').length;
+            const issueJobs = allProj.filter(p => p.status === 'issue').length;
             const passedJobs = allProj.filter(p => p.status === 'passed').length;
             const techs = isAdmin ? state.users.filter(u => u.role === 'technician') : [state.currentUser];
 
             return `
             <div class="space-y-8 animate-in fade-in duration-300">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div class="glass-panel p-7 rounded-[2.5rem] shadow-xl flex items-center gap-5">
-                        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-folder-open"></i></div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
+                        <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-compass-drafting"></i></div>
                         <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase">งานทั้งหมด</p>
-                            <h3 class="text-3xl font-extrabold text-slate-900 mt-1">${totalJobs}</h3>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase">สำรวจงาน</p>
+                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${surveyJobs}</h3>
                         </div>
                     </div>
-                    <div class="glass-panel p-7 rounded-[2.5rem] shadow-xl flex items-center gap-5">
-                        <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-3xl flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-spinner"></i></div>
+                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
+                        <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-spinner"></i></div>
                         <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase">กำลังทำ</p>
-                            <h3 class="text-3xl font-extrabold text-slate-900 mt-1">${inProgressJobs}</h3>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase">กำลังทำ</p>
+                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${inProgressJobs}</h3>
                         </div>
                     </div>
-                    <div class="glass-panel p-7 rounded-[2.5rem] shadow-xl flex items-center gap-5">
-                        <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center text-2xl font-bold"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
+                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-triangle-exclamation"></i></div>
                         <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase">เสร็จสิ้น</p>
-                            <h3 class="text-3xl font-extrabold text-slate-900 mt-1">${passedJobs}</h3>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase">งานติดปัญหา</p>
+                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${issueJobs}</h3>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
+                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase">เสร็จสิ้น</p>
+                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${passedJobs}</h3>
                         </div>
                     </div>
                 </div>
@@ -725,15 +744,17 @@
                         ${dayProjects.length > 0 ? `<span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg">${dayProjects.length} งาน</span>` : ''}
                     </div>
                     <div class="flex-1 space-y-1.5 overflow-y-auto max-h-[110px] scrollbar-none">
-                        ${dayProjects.map(p => `
-                            <div onclick="selectProject('${p.id}')" class="p-2 rounded-xl text-[11px] font-medium cursor-pointer transition ${p.status === 'passed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-900 border border-amber-200'}">
+                        ${dayProjects.map(p => {
+                            const meta = getStatusMeta(p.status);
+                            return `
+                            <div onclick="selectProject('${p.id}')" class="p-2 rounded-xl text-[11px] font-medium cursor-pointer transition border ${meta.bg} ${meta.text}">
                                 <div class="font-bold truncate flex items-center justify-between">
                                     <span>${p.code}</span>
-                                    <span class="text-[9px] text-slate-500">${p.timeStart || ''}</span>
+                                    <span class="text-[9px] opacity-75">${p.timeStart || ''}</span>
                                 </div>
-                                <div class="truncate text-[10px] text-slate-600">${p.customerName}</div>
-                            </div>
-                        `).join('')}
+                                <div class="truncate text-[10px] opacity-90">${p.customerName}</div>
+                            </div>`;
+                        }).join('')}
                     </div>
                 </div>`;
             }
@@ -818,13 +839,13 @@
                     ${projects.length === 0 ? `<div class="col-span-full py-24 text-center glass-panel rounded-[2.5rem]">ไม่พบโปรเจค</div>` : projects.map(p => {
                         const photoCount = Object.keys(p.photos || {}).length;
                         const progressPct = Math.round((photoCount / checklistConfig.length) * 100);
-                        const isPassed = p.status === 'passed';
+                        const meta = getStatusMeta(p.status);
                         return `
                         <div class="glass-panel rounded-[2.5rem] p-6 shadow-xl flex flex-col justify-between">
                             <div>
                                 <div class="flex justify-between items-start mb-4">
                                     <span class="px-4 py-1.5 bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-2xl">${p.code}</span>
-                                    <span class="px-3.5 py-1.5 text-xs font-semibold rounded-2xl ${isPassed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${isPassed ? 'ผ่าน' : 'กำลังทำ'}</span>
+                                    <span class="px-3.5 py-1.5 text-xs font-semibold rounded-2xl ${meta.bg} ${meta.text}">${meta.label}</span>
                                 </div>
                                 <h3 class="font-bold text-slate-900 text-lg mb-1">${p.customerName}</h3>
                                 <p class="text-xs text-slate-500 mb-3">📞 <a href="tel:${p.customerPhone}" class="text-blue-600 font-semibold">${p.customerPhone}</a></p>
@@ -916,10 +937,15 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    ${projects.map(p => `
+                    ${projects.map(p => {
+                        const meta = getStatusMeta(p.status);
+                        return `
                         <div class="bg-white border rounded-[2.5rem] p-7 flex flex-col justify-between gap-6 shadow-sm">
                             <div>
-                                <span class="px-4 py-1.5 bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-2xl">${p.code}</span>
+                                <div class="flex justify-between items-center">
+                                    <span class="px-4 py-1.5 bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-2xl">${p.code}</span>
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
+                                </div>
                                 <h4 class="font-bold text-slate-900 text-lg mt-3 mb-1">${p.customerName}</h4>
                                 <p class="text-xs text-slate-600">📍 ${p.customerAddress}</p>
                             </div>
@@ -928,8 +954,8 @@
                                 <button onclick="exportProjectExcel('${p.id}')" class="px-4 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-semibold hover:bg-emerald-700 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
                                 <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-semibold hover:bg-indigo-700 transition"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
                             </div>
-                        </div>
-                    `).join('')}
+                        </div>`;
+                    }).join('')}
                 </div>
             </div>`;
         }
@@ -949,11 +975,11 @@
             const isAdmin = state.currentUser.role === 'admin';
             const photoCount = Object.keys(p.photos || {}).length;
             const progressPct = Math.round((photoCount / checklistConfig.length) * 100);
-            const isPassed = p.status === 'passed';
+            const currentStatus = p.status || 'inprogress';
 
             return `
             <header class="bg-white/95 backdrop-blur-2xl shadow-sm sticky top-0 z-30 border-b border-slate-200">
-                <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
                     <div class="flex items-center gap-4">
                         <button onclick="backToMain()" class="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
                         <div>
@@ -961,7 +987,15 @@
                             <p class="text-xs text-slate-500">📍 ${p.customerAddress}</p>
                         </div>
                     </div>
-                    ${isAdmin ? `<button onclick="toggleProjectStatus('${p.id}')" class="px-5 py-3 rounded-2xl text-xs font-bold ${isPassed ? 'bg-amber-600 text-white' : 'bg-emerald-600 text-white'}">${isPassed ? 'เปลี่ยนเป็นกำลังทำ' : 'อนุมัติงานผ่าน (Pass)'}</button>` : ''}
+                    ${isAdmin ? `
+                    <div class="flex items-center gap-2">
+                        <select onchange="updateProjectStatus('${p.id}', this.value)" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="survey" ${currentStatus === 'survey' ? 'selected' : ''}>📌 สำรวจงาน</option>
+                            <option value="inprogress" ${currentStatus === 'inprogress' ? 'selected' : ''}>⚡ กำลังทำ</option>
+                            <option value="issue" ${currentStatus === 'issue' ? 'selected' : ''}>⚠️ งานติดปัญหา</option>
+                            <option value="passed" ${currentStatus === 'passed' ? 'selected' : ''}>✅ ผ่าน (Pass)</option>
+                        </select>
+                    </div>` : ''}
                 </div>
             </header>
 
@@ -1009,12 +1043,13 @@
             </main>`;
         }
 
-        window.toggleProjectStatus = async function(id) {
+        window.updateProjectStatus = async function(id, newStatus) {
             const p = state.projects.find(x => x.id === id);
             if (p) {
-                p.status = p.status === 'passed' ? 'inprogress' : 'passed';
+                p.status = newStatus;
                 await saveProjectToFirestore(p);
                 render();
+                showMessage('เปลี่ยนสถานะงานเรียบร้อยแล้ว', 'fa-solid fa-circle-check');
             }
         };
 
@@ -1056,7 +1091,7 @@
                 timeStart: document.getElementById('newProjTimeStart').value.trim(),
                 timeEnd: document.getElementById('newProjTimeEnd').value.trim(),
                 notes: document.getElementById('newProjNotes').value.trim(),
-                status: 'inprogress',
+                status: 'survey',
                 photos: {}, texts: {}, itemNotes: {}
             };
             await saveProjectToFirestore(newProj);
@@ -1122,7 +1157,6 @@
         let currentFacingMode = 'environment';
         let currentZoom = 1;
 
-        // Gallery Upload Handler
         let galleryUploadKey = null;
         window.triggerGalleryUpload = function(key, label) {
             galleryUploadKey = key;
@@ -1364,7 +1398,6 @@
             }
         }
 
-        // ปรับปรุงฟังก์ชันส่งออก PDF เป็นขนาด A3 จำนวน 6 รูปต่อหน้า (ปรับลดขนาดกล่องรูปภาพลงครึ่งหนึ่งตามคำขอ)
         window.exportProjectPDF = async function(id) {
             const p = state.projects.find(x => x.id === id);
             if (!p) return;
@@ -1399,19 +1432,19 @@
                 return;
             }
 
-            // ขนาดกระดาษ A3 (แนวตั้ง) มิติพิกเซลที่ความละเอียดสูง: 1122 x 1587 px
             const wrapper = document.createElement('div');
             wrapper.style.position = 'absolute';
             wrapper.style.left = '-9999px';
             wrapper.style.width = '1122px';
             wrapper.style.background = '#ffffff';
 
+            const meta = getStatusMeta(p.status);
+
             let pagesHtml = '';
             for (let i = 0; i < activePhotos.length; i += 6) {
                 const chunk = activePhotos.slice(i, i + 6);
                 let chunkCards = '';
                 chunk.forEach(photo => {
-                    // ปรับความสูงของการ์ดและกล่องรูปภาพลงครึ่งหนึ่ง (ความสูงกล่องรูปภาพเหลือ 170px และกรอบการ์ดเหลือ 230px)
                     chunkCards += `
                     <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 230px; box-sizing: border-box; page-break-inside: avoid;">
                         <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
@@ -1427,7 +1460,7 @@
                     <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 25px; height: 75px; box-sizing: border-box;">
                         <h1 style="font-size: 22px; font-weight: bold; color: #1e293b; margin: 0 0 6px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (ขนาดกระดาษ A3 - หน้า ${Math.floor(i/6) + 1})</h1>
                         <div style="font-size: 14px; color: #475569; display: flex; justify-content: space-between;">
-                            <div><strong>รหัสงาน:</strong> ${p.code} | <strong>ลูกค้า:</strong> ${p.customerName}</div>
+                            <div><strong>รหัสงาน:</strong> ${p.code} | <strong>ลูกค้า:</strong> ${p.customerName} | <strong>สถานะ:</strong> <span style="font-weight: bold;">${meta.label}</span></div>
                             <div><strong>วันที่:</strong> ${p.date}</div>
                         </div>
                     </div>
@@ -1442,7 +1475,6 @@
 
             try {
                 const { jsPDF } = window.jspdf;
-                // สร้างเอกสาร PDF ขนาด A3 แนวตั้ง (297 x 420 มิลลิเมตร)
                 const pdf = new jsPDF('p', 'mm', 'a3');
                 const pageDivs = wrapper.children;
 
@@ -1466,7 +1498,8 @@
         window.exportProjectExcel = function(id) {
             const p = state.projects.find(x => x.id === id);
             if (!p) return;
-            const data = checklistConfig.map((item, idx) => ({ 'ลำดับ': idx + 1, 'หัวข้อ': item.label, 'สถานะ': p.photos && p.photos[item.key] ? 'ถ่ายแล้ว' : 'ยังไม่ถ่าย' }));
+            const meta = getStatusMeta(p.status);
+            const data = checklistConfig.map((item, idx) => ({ 'ลำดับ': idx + 1, 'หัวข้อ': item.label, 'สถานะภาพถ่าย': p.photos && p.photos[item.key] ? 'ถ่ายแล้ว' : 'ยังไม่ถ่าย', 'สถานะงาน': meta.label }));
             const ws = XLSX.utils.json_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Checklist");
@@ -1488,7 +1521,12 @@
 
             const promises = keys.map(async (key) => {
                 const conf = checklistConfig.find(c => c.key === key);
-                const fileName = `${conf ? conf.label : key}.jpg`;
+                const rawLabel = conf ? conf.label : key;
+                const idx = checklistConfig.findIndex(c => c.key === key) + 1;
+                
+                const safeLabel = rawLabel.replace(/[\/\\:\*\?"<>\|]/g, '_');
+                const fileName = `${idx}_${safeLabel}.jpg`;
+                
                 const url = p.photos[key];
                 
                 try {
