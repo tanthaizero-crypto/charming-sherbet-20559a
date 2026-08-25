@@ -46,32 +46,33 @@
     <!-- Map Camera Capture Modal -->
     <div id="cameraModal" class="fixed inset-0 bg-slate-950 z-50 hidden flex flex-col items-center justify-between p-0 overflow-hidden">
         <div class="bg-slate-900/80 backdrop-blur-md text-white px-6 py-4 flex justify-between items-center w-full z-10 shrink-0 border-b border-white/10">
-            <h3 class="font-bold text-base sm:text-lg flex items-center gap-3"><div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-camera"></i></div> ถ่ายภาพเช็คลิสต์</h3>
-            <button onclick="closeCameraModal()" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <h3 class="font-bold text-lg sm:text-xl flex items-center gap-3"><div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white"><i class="fa-solid fa-camera"></i></div> ถ่ายภาพเช็คลิสต์</h3>
+            <button onclick="closeCameraModal()" class="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
         <div class="relative bg-black flex-1 w-full flex items-center justify-center overflow-hidden">
             <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover origin-center transition-transform duration-75"></video>
             <canvas id="cameraCanvas" class="hidden"></canvas>
             
-            <div class="absolute top-4 right-4 bg-slate-950/70 backdrop-blur-md px-4 py-2.5 rounded-2xl flex items-center gap-3 text-white text-xs z-20 border border-white/10 shadow-xl">
-                <i class="fa-solid fa-magnifying-glass-minus text-slate-400"></i>
-                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1" oninput="handleZoomChange(this.value)" class="w-24 sm:w-32 accent-blue-500 cursor-pointer">
-                <i class="fa-solid fa-magnifying-glass-plus text-slate-400"></i>
+            <div class="absolute top-6 right-6 bg-slate-950/70 backdrop-blur-md px-5 py-3.5 rounded-2xl flex items-center gap-4 text-white text-sm z-20 border border-white/10 shadow-xl">
+                <i class="fa-solid fa-magnifying-glass-minus text-slate-400 text-base"></i>
+                <input type="range" id="zoomRange" min="1" max="3" step="0.1" value="1" oninput="handleZoomChange(this.value)" class="w-36 sm:w-48 accent-blue-500 cursor-pointer">
+                <i class="fa-solid fa-magnifying-glass-plus text-slate-400 text-base"></i>
             </div>
 
-            <div id="cameraStampOverlay" class="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-6 bg-slate-950/75 backdrop-blur-md text-white text-[10px] sm:text-[11px] p-2 rounded-lg pointer-events-none font-mono space-y-1 border border-white/10 shadow-xl z-10">
+            <!-- ขยายข้อความสติกเกอร์ในกล้องขึ้น 2 เท่า -->
+            <div id="cameraStampOverlay" class="absolute bottom-6 left-6 right-6 sm:left-8 sm:right-8 bg-slate-950/80 backdrop-blur-md text-white text-[18px] sm:text-[20px] p-4 rounded-2xl pointer-events-none font-mono space-y-2 border border-white/15 shadow-2xl z-10">
                 <div class="flex justify-between items-center">
-                    <span id="stampProject" class="text-amber-400 font-bold truncate text-[11px]">-</span>
-                    <span id="stampDateTime" class="text-slate-300 text-[10px]">-</span>
+                    <span id="stampProject" class="text-amber-400 font-bold truncate text-[20px] sm:text-[22px]">-</span>
+                    <span id="stampDateTime" class="text-slate-200 text-[18px] sm:text-[20px]">-</span>
                 </div>
-                <div id="stampItem" class="text-blue-400 font-bold truncate text-[11px]">-</div>
-                <div id="stampAddress" class="text-emerald-400 truncate text-[10px]">📍 พร้อมใช้งานพิกัด GPS</div>
+                <div id="stampItem" class="text-blue-400 font-bold truncate text-[20px] sm:text-[22px]">-</div>
+                <div id="stampAddress" class="text-emerald-400 truncate text-[16px] sm:text-[18px]">📍 พร้อมใช้งานพิกัด GPS</div>
             </div>
         </div>
-        <div class="p-4 sm:p-6 bg-slate-900/90 backdrop-blur-md flex flex-wrap justify-between items-center gap-3 w-full z-10 shrink-0 border-t border-white/10">
-            <button onclick="switchCamera()" class="px-5 py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-semibold text-xs sm:text-sm flex items-center gap-2.5 transition shadow-sm"><i class="fa-solid fa-rotate text-blue-400"></i> สลับกล้อง</button>
-            <button onclick="capturePhotoFromVideo()" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/40 text-sm sm:text-base flex items-center gap-2.5 transition active:scale-95"><i class="fa-solid fa-camera text-white"></i> ถ่ายรูป</button>
-            <button onclick="closeCameraModal()" class="px-5 py-3.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-semibold text-xs sm:text-sm transition shadow-sm">ยกเลิก</button>
+        <div class="p-6 sm:p-8 bg-slate-900/90 backdrop-blur-md flex flex-wrap justify-between items-center gap-4 w-full z-10 shrink-0 border-t border-white/10">
+            <button onclick="switchCamera()" class="px-6 py-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-semibold text-sm sm:text-base flex items-center gap-3 transition shadow-sm"><i class="fa-solid fa-rotate text-blue-400 text-base"></i> สลับกล้อง</button>
+            <button onclick="capturePhotoFromVideo()" class="px-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-xl shadow-blue-600/40 text-base sm:text-lg flex items-center gap-3 transition active:scale-95"><i class="fa-solid fa-camera text-white text-lg"></i> ถ่ายรูป</button>
+            <button onclick="closeCameraModal()" class="px-6 py-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-semibold text-sm sm:text-base transition shadow-sm">ยกเลิก</button>
         </div>
     </div>
 
@@ -225,11 +226,27 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
-    <div id="imageModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 hidden flex flex-col items-center justify-center p-4">
-        <button onclick="closeImageModal()" class="absolute top-6 right-6 text-white text-xl bg-white/10 hover:bg-white/25 w-12 h-12 rounded-full z-10 transition flex items-center justify-center backdrop-blur"><i class="fa-solid fa-xmark"></i></button>
-        <img id="modalImage" src="" alt="Preview" class="max-w-[95vw] max-h-[80vh] rounded-[2rem] shadow-2xl object-contain border border-white/10">
-        <div id="modalImageCaption" class="text-white mt-5 text-xs sm:text-sm font-medium text-center px-6 py-3 bg-slate-900/90 rounded-2xl border border-white/10 backdrop-blur"></div>
+    <!-- Image Modal (Lightbox with Slider) -->
+    <div id="imageModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 hidden flex flex-col items-center justify-between p-4 sm:p-8">
+        <div class="w-full max-w-5xl flex justify-between items-center text-white z-10">
+            <div id="modalImageAlbumTitle" class="text-sm sm:text-base font-bold text-amber-400">อัลบั้มงาน</div>
+            <button onclick="closeImageModal()" class="text-white text-xl bg-white/10 hover:bg-white/25 w-12 h-12 rounded-full transition flex items-center justify-center backdrop-blur"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        
+        <div class="relative flex-1 w-full max-w-5xl flex items-center justify-center px-12">
+            <!-- ปุ่มเลื่อนซ้าย -->
+            <button onclick="slideImage(-1)" class="absolute left-0 z-20 w-12 h-12 bg-white/10 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur transition"><i class="fa-solid fa-chevron-left text-lg"></i></button>
+            
+            <div class="flex flex-col items-center justify-center">
+                <img id="modalImage" src="" alt="Preview" class="max-w-[85vw] max-h-[70vh] rounded-[2rem] shadow-2xl object-contain border border-white/10">
+                <div id="modalImageCaption" class="text-white mt-4 text-xs sm:text-sm font-medium text-center px-6 py-2.5 bg-slate-900/90 rounded-2xl border border-white/10 backdrop-blur"></div>
+            </div>
+
+            <!-- ปุ่มเลื่อนขวา -->
+            <button onclick="slideImage(1)" class="absolute right-0 z-20 w-12 h-12 bg-white/10 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur transition"><i class="fa-solid fa-chevron-right text-lg"></i></button>
+        </div>
+
+        <div class="text-slate-400 text-xs font-mono" id="modalImageCounter">1 / 1</div>
     </div>
 
     <!-- Message Modal -->
@@ -295,59 +312,60 @@
             { key: 'tech_front_house', label: '16. ช่างถ่ายหน้าบ้าน', type: 'photo' },
             { key: 'customer_point', label: '17. ลูกค้าชี้จุดติดตั้ง', type: 'photo' },
             { key: 'warning_sign', label: '18. อุปกรณ์ / ป้ายเตือน', type: 'photo' },
-            { key: 'box_side', label: '19. รูปข้างกล่อง', type: 'photo' },
-            { key: 'shipping_barcode', label: '20. รูปบาร์โค้ดขนส่ง', type: 'photo' },
-            { key: 'machine_card', label: '21. เครื่อง+การ์ด', type: 'photo' },
-            { key: 'machine_code', label: '22. รหัสข้างเครื่อง', type: 'photo' },
-            { key: 'torque_back', label: '23. ขันทอกค์หลังเครื่อง', type: 'photo' },
-            { key: 'mark_back', label: '24. มาร์คหลังเครื่อง', type: 'photo' },
-            { key: 'water_level', label: '25. ระดับน้ำ', type: 'photo' },
-            { key: 'breaker_equip', label: '26. อุปกรณ์ เบรกเกอร์', type: 'photo' },
-            { key: 'wire_used', label: '27. สายไฟที่ใช้', type: 'photo' },
-            { key: 'customer_main_wire', label: '28. สายเมนลูกค้า', type: 'photo' },
-            { key: 'rccb_crimp', label: '29. ย้ำหางปลา RCCB', type: 'photo' },
-            { key: 'mcb_crimp', label: '30. ย้ำหางปลา MCB', type: 'photo' },
-            { key: 'rccb_torque', label: '31. ขันทอก RCCB', type: 'photo' },
-            { key: 'rccb_mark', label: '32. มาค RCCB', type: 'photo' },
-            { key: 'mcb_torque', label: '33. ขันทอก MCB', type: 'photo' },
-            { key: 'mcb_mark', label: '34. มาค MCB', type: 'photo' },
-            { key: 'nut_left', label: '35. รูปหัวน็อตซ้าย', type: 'photo' },
-            { key: 'nut_right', label: '36. รูปหัวน๊อตขาว', type: 'photo' },
-            { key: 'ground_rod', label: '37. รูปแท่งกราว', type: 'photo' },
-            { key: 'pipe_photo', label: '38. รูปท่อ', type: 'photo' },
-            { key: 'conduit_dir_1', label: '39. แนวการเดินท่อ 1', type: 'photo' },
-            { key: 'conduit_dir_2', label: '40. แนวการเดินท่อ 2', type: 'photo' },
-            { key: 'conduit_dir_3', label: '41. แนวการเดินท่อ 3', type: 'photo' },
-            { key: 'ln_in_rccb', label: '42. L+N IN RCCB', type: 'photo' },
-            { key: 'ln_out_rccb', label: '43. L+N OUT RCCB', type: 'photo' },
-            { key: 'ln_in_mcb', label: '44. L+N IN MCB', type: 'photo' },
-            { key: 'mcb_3p_in_l1', label: '45. L1+N IN MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_in_l2', label: '46. L2+N IN MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_in_l3', label: '47. L3+N IN MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_out_l1', label: '48. L1+N OUT MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_out_l2', label: '49. L2+N OUT MCB 3 P', type: 'photo' },
-            { key: 'mcb_3p_out_l3', label: '50. L3+N OUT MCB 3 P', type: 'photo' },
-            { key: 'rccb_3p_in_l1', label: '51. L1+N IN RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_in_l2', label: '52. L2+N IN RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_in_l3', label: '53. L3+N IN RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_out_l1', label: '54. L1+N OUT RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_out_l2', label: '55. L2+N OUT RCCB 3P', type: 'photo' },
-            { key: 'rccb_3p_out_l3', label: '56. L3+N OUT RCCB 3P', type: 'photo' },
-            { key: 'ln_out_mcb', label: '57. L+N OUT MCB', type: 'photo' },
-            { key: 'lg_mcb', label: '58. L+G MCB', type: 'photo' },
-            { key: 'volts_12v', label: '59. 12 V', type: 'photo' },
-            { key: 'ground_ohm', label: '60. วัดโอร์มกราว', type: 'photo' },
-            { key: 'charger_status', label: '61. สถานะไฟเครื่องชาร์จ', type: 'photo' },
-            { key: 'install_wide_open', label: '62. ติดตั้งเสร็จแบบกว้าง (ก่อนปิดฝาตู้)', type: 'photo' },
-            { key: 'install_wide_closed', label: '63. ติดตั้งเสร็จแบบกว้าง (หลังปิดฝาตู้)', type: 'photo' },
-            { key: 'cleaning', label: '64. ทำความสะอาด', type: 'photo' },
-            { key: 'customer_sign', label: '65. ลูกค้าเซ็นเอกสาร', type: 'photo' },
-            { key: 'receive_card', label: '66. รับการ์ด', type: 'photo' },
-            { key: 'doc_page_1', label: '67. เอกสารหน้าที่ 1', type: 'photo' },
-            { key: 'doc_page_2', label: '68. เอกสารหน้าที่ 2', type: 'photo' },
-            { key: 'doc_page_3', label: '69. เอกสารหน้าที่ 3', type: 'photo' },
-            { key: 'doc_page_4', label: '70. เอกสารหน้าที่ 4', type: 'photo' },
-            { key: 'doc_page_5', label: '71. เอกสารหน้าที่ 5', type: 'photo' }
+            { key: 'warranty_sticker', label: '19. สติกเกอร์ใบประกัน', type: 'photo' },
+            { key: 'box_side', label: '20. รูปข้างกล่อง', type: 'photo' },
+            { key: 'shipping_barcode', label: '21. รูปบาร์โค้ดขนส่ง', type: 'photo' },
+            { key: 'machine_card', label: '22. เครื่อง+การ์ด', type: 'photo' },
+            { key: 'machine_code', label: '23. รหัสข้างเครื่อง', type: 'photo' },
+            { key: 'torque_back', label: '24. ขันทอกค์หลังเครื่อง', type: 'photo' },
+            { key: 'mark_back', label: '25. มาร์คหลังเครื่อง', type: 'photo' },
+            { key: 'water_level', label: '26. ระดับน้ำ', type: 'photo' },
+            { key: 'breaker_equip', label: '27. อุปกรณ์ เบรกเกอร์', type: 'photo' },
+            { key: 'wire_used', label: '28. สายไฟที่ใช้', type: 'photo' },
+            { key: 'customer_main_wire', label: '29. สายเมนลูกค้า', type: 'photo' },
+            { key: 'rccb_crimp', label: '30. ย้ำหางปลา RCCB', type: 'photo' },
+            { key: 'mcb_crimp', label: '31. ย้ำหางปลา MCB', type: 'photo' },
+            { key: 'rccb_torque', label: '32. ขันทอก RCCB', type: 'photo' },
+            { key: 'rccb_mark', label: '33. มาค RCCB', type: 'photo' },
+            { key: 'mcb_torque', label: '34. ขันทอก MCB', type: 'photo' },
+            { key: 'mcb_mark', label: '35. มาค MCB', type: 'photo' },
+            { key: 'nut_left', label: '36. รูปหัวน็อตซ้าย', type: 'photo' },
+            { key: 'nut_right', label: '37. รูปหัวน๊อตขาว', type: 'photo' },
+            { key: 'ground_rod', label: '38. รูปแท่งกราว', type: 'photo' },
+            { key: 'pipe_photo', label: '39. รูปท่อ', type: 'photo' },
+            { key: 'conduit_dir_1', label: '40. แนวการเดินท่อ 1', type: 'photo' },
+            { key: 'conduit_dir_2', label: '41. แนวการเดินท่อ 2', type: 'photo' },
+            { key: 'conduit_dir_3', label: '42. แนวการเดินท่อ 3', type: 'photo' },
+            { key: 'ln_in_rccb', label: '43. L+N IN RCCB', type: 'photo' },
+            { key: 'ln_out_rccb', label: '44. L+N OUT RCCB', type: 'photo' },
+            { key: 'ln_in_mcb', label: '45. L+N IN MCB', type: 'photo' },
+            { key: 'mcb_3p_in_l1', label: '46. L1+N IN MCB 3 P', type: 'photo' },
+            { key: 'mcb_3p_in_l2', label: '47. L2+N IN MCB 3 P', type: 'photo' },
+            { key: 'mcb_3p_in_l3', label: '48. L3+N IN MCB 3 P', type: 'photo' },
+            { key: 'mcb_3p_out_l1', label: '49. L1+N OUT MCB 3 P', type: 'photo' },
+            { key: 'mcb_3p_out_l2', label: '50. L2+N OUT MCB 3 P', type: 'photo' },
+            { key: 'mcb_3p_out_l3', label: '51. L3+N OUT MCB 3 P', type: 'photo' },
+            { key: 'rccb_3p_in_l1', label: '52. L1+N IN RCCB 3P', type: 'photo' },
+            { key: 'rccb_3p_in_l2', label: '53. L2+N IN RCCB 3P', type: 'photo' },
+            { key: 'rccb_3p_in_l3', label: '54. L3+N IN RCCB 3P', type: 'photo' },
+            { key: 'rccb_3p_out_l1', label: '55. L1+N OUT RCCB 3P', type: 'photo' },
+            { key: 'rccb_3p_out_l2', label: '56. L2+N OUT RCCB 3P', type: 'photo' },
+            { key: 'rccb_3p_out_l3', label: '57. L3+N OUT RCCB 3P', type: 'photo' },
+            { key: 'ln_out_mcb', label: '58. L+N OUT MCB', type: 'photo' },
+            { key: 'lg_mcb', label: '59. L+G MCB', type: 'photo' },
+            { key: 'volts_12v', label: '60. 12 V', type: 'photo' },
+            { key: 'ground_ohm', label: '61. วัดโอร์มกราว', type: 'photo' },
+            { key: 'charger_status', label: '62. สถานะไฟเครื่องชาร์จ', type: 'photo' },
+            { key: 'install_wide_open', label: '63. ติดตั้งเสร็จแบบกว้าง (ก่อนปิดฝาตู้)', type: 'photo' },
+            { key: 'install_wide_closed', label: '64. ติดตั้งเสร็จแบบกว้าง (หลังปิดฝาตู้)', type: 'photo' },
+            { key: 'cleaning', label: '65. ทำความสะอาด', type: 'photo' },
+            { key: 'customer_sign', label: '66. ลูกค้าเซ็นเอกสาร', type: 'photo' },
+            { key: 'receive_card', label: '67. รับการ์ด', type: 'photo' },
+            { key: 'doc_page_1', label: '68. เอกสารหน้าที่ 1', type: 'photo' },
+            { key: 'doc_page_2', label: '69. เอกสารหน้าที่ 2', type: 'photo' },
+            { key: 'doc_page_3', label: '70. เอกสารหน้าที่ 3', type: 'photo' },
+            { key: 'doc_page_4', label: '71. เอกสารหน้าที่ 4', type: 'photo' },
+            { key: 'doc_page_5', label: '72. เอกสารหน้าที่ 5', type: 'photo' }
         ];
 
         let state = {
@@ -361,6 +379,7 @@
                 { username: 'tech2', pin: '1234', role: 'technician', name: 'ช่างประเสริฐ', status: 'approved', email: 'tech2@evcharger.com', phone: '0822222222' }
             ],
             selectedProjectId: null,
+            selectedAlbumId: null,
             activeTab: 'dashboard',
             filterStatus: 'all',
             searchQuery: '',
@@ -387,7 +406,7 @@
                     }
                 }, () => {
                     cachedGlobalAddress = "ไม่สามารถเข้าถึงพิกัด GPS ได้";
-                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 });
             }
         }
 
@@ -579,33 +598,50 @@
         window.logout = function() {
             state.currentUser = null;
             state.selectedProjectId = null;
+            state.selectedAlbumId = null;
             state.activeTab = 'dashboard';
             localStorage.removeItem('ev_charger_app_state');
             render();
+        };
+
+        function filterProjects(projectsList) {
+            let filtered = projectsList;
+            if (state.filterStatus && state.filterStatus !== 'all') {
+                filtered = filtered.filter(p => p.status === state.filterStatus);
+            }
+            if (state.searchQuery.trim() !== '') {
+                const queryWords = state.searchQuery.toLowerCase().trim().split(/\s+/);
+                filtered = filtered.filter(p => {
+                    const searchableText = [
+                        p.code,
+                        p.customerName,
+                        p.customerAddress,
+                        p.customerPhone,
+                        p.technician,
+                        p.notes,
+                        p.date
+                    ].filter(Boolean).join(' ').toLowerCase();
+
+                    return queryWords.every(word => searchableText.includes(word));
+                });
+            }
+            return filtered;
+        }
+
+        window.handleHeaderDropdownSelect = function(key) {
+            if (!key) return;
+            const item = checklistConfig.find(c => c.key === key);
+            if (item) {
+                openCameraModalForItem(item.key, item.label);
+            }
         };
 
         function renderMainDashboard() {
             const isAdmin = state.currentUser.role === 'admin';
             const techName = state.currentUser.name;
 
-            let filteredProjects = state.projects;
-            if (!isAdmin) {
-                filteredProjects = state.projects.filter(p => p.technician === techName && p.status !== 'passed');
-            }
-
-            if (state.filterStatus !== 'all') {
-                filteredProjects = filteredProjects.filter(p => p.status === state.filterStatus);
-            }
-
-            if (state.searchQuery.trim() !== '') {
-                const q = state.searchQuery.toLowerCase();
-                filteredProjects = filteredProjects.filter(p => 
-                    p.code.toLowerCase().includes(q) || 
-                    p.customerName.toLowerCase().includes(q) || 
-                    p.customerAddress.toLowerCase().includes(q) ||
-                    p.technician.toLowerCase().includes(q)
-                );
-            }
+            let baseProjects = isAdmin ? state.projects : state.projects.filter(p => p.technician === techName && p.status !== 'passed');
+            let filteredProjects = filterProjects(baseProjects);
 
             return `
             <header class="bg-white/90 backdrop-blur-2xl shadow-sm sticky top-0 z-30 border-b border-slate-200">
@@ -628,7 +664,7 @@
                         <button onclick="switchTab('dashboard')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-chart-pie"></i> แดชบอร์ด</button>
                         <button onclick="switchTab('projects')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'projects' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-list-check"></i> รายการงาน (${filteredProjects.length})</button>
                         <button onclick="switchTab('calendar')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'calendar' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-calendar-days"></i> ปฏิทิน</button>
-                        <button onclick="switchTab('photos')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'photos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-images"></i> คลังรูปภาพ</button>
+                        <button onclick="switchTab('photos')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'photos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-images"></i> อัลบั้มรูปงาน</button>
                         ${isAdmin ? `<button onclick="switchTab('users')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-users"></i> จัดการผู้ใช้</button>` : ''}
                         <button onclick="switchTab('export')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'export' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-share-nodes"></i> ส่งออก PDF/Excel</button>
                     </div>
@@ -641,12 +677,13 @@
                 ${state.activeTab === 'calendar' ? renderCalendarTab(isAdmin) : ''}
                 ${state.activeTab === 'photos' ? renderPhotosTab(isAdmin) : ''}
                 ${state.activeTab === 'users' && isAdmin ? renderUsersTab() : ''}
-                ${state.activeTab === 'export' ? renderExportTab(isAdmin) : ''}
+                ${state.activeTab === 'export' ? renderExportTab(filteredProjects, isAdmin) : ''}
             </main>`;
         }
 
         window.switchTab = function(tab) {
             state.activeTab = tab;
+            state.selectedAlbumId = null;
             saveAppState();
             render();
         };
@@ -736,6 +773,146 @@
                 </div>
             </div>`;
         }
+
+        window.openAlbum = function(projectId) {
+            state.selectedAlbumId = projectId;
+            render();
+        };
+
+        window.closeAlbum = function() {
+            state.selectedAlbumId = null;
+            render();
+        };
+
+        function renderPhotosTab(isAdmin) {
+            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
+            projects.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (state.selectedAlbumId) {
+                const p = projects.find(x => x.id === state.selectedAlbumId);
+                if (!p || !p.photos || Object.keys(p.photos).length === 0) {
+                    return `
+                    <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-6">
+                        <button onclick="closeAlbum()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-2xl text-xs font-bold flex items-center gap-2"><i class="fa-solid fa-arrow-left"></i> กลับสู่หน้าอัลบั้มทั้งหมด</button>
+                        <div class="py-24 text-center text-slate-400">อัลบั้มนี้ยังไม่มีรูปภาพ</div>
+                    </div>`;
+                }
+
+                const photoEntries = Object.entries(p.photos).map(([key, url]) => {
+                    const conf = checklistConfig.find(c => c.key === key);
+                    return { key, url, label: conf ? conf.label : key };
+                });
+
+                return `
+                <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-6 animate-in fade-in duration-300">
+                    <div class="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
+                        <div class="flex items-center gap-4">
+                            <button onclick="closeAlbum()" class="w-11 h-11 bg-slate-100 hover:bg-slate-200 rounded-2xl flex items-center justify-center text-slate-700 transition"><i class="fa-solid fa-arrow-left"></i></button>
+                            <div>
+                                <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3">📁 อัลบั้ม: ${p.code} - ${p.customerName}</h3>
+                                <p class="text-xs text-slate-500 mt-0.5">จำนวนรูปภาพทั้งหมด ${photoEntries.length} รูป (คลิกที่รูปเพื่อเปิดดูแบบเต็มและเลื่อนภาพ)</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button onclick="exportProjectZIP('${p.id}')" class="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-2 transition active:scale-95"><i class="fa-solid fa-file-zipper"></i> ดาวน์โหลด ZIP</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                        ${photoEntries.map((item, idx) => `
+                            <div class="bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col group cursor-pointer" onclick="openAlbumSlider('${p.id}', ${idx})">
+                                <div class="relative aspect-[4/3] bg-black overflow-hidden">
+                                    <img src="${item.url}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                </div>
+                                <div class="p-4 text-xs">
+                                    <span class="font-bold text-slate-900 line-clamp-1">${item.label}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }
+
+            return `
+            <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8 animate-in fade-in duration-300">
+                <div class="flex justify-between items-center pb-6 border-b border-slate-100">
+                    <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-images"></i></div> อัลบั้มรูปภาพแยกตามงานติดตั้ง</h3>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    ${projects.map(p => {
+                        const photosObj = p.photos || {};
+                        const photoKeys = Object.keys(photosObj);
+                        const count = photoKeys.length;
+                        const firstPhotoUrl = count > 0 ? photosObj[photoKeys[0]] : 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?q=80&w=400&auto=format&fit=crop';
+                        const meta = getStatusMeta(p.status);
+
+                        return `
+                        <div onclick="openAlbum('${p.id}')" class="bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col justify-between group cursor-pointer hover:shadow-xl hover:border-blue-300 transition duration-300">
+                            <div class="relative aspect-[16/9] bg-slate-900 overflow-hidden">
+                                <img src="${firstPhotoUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90">
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                                <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                                    <span class="px-3.5 py-1.5 bg-blue-600 text-white font-mono font-bold text-xs rounded-xl shadow-lg">${p.code}</span>
+                                    <span class="px-3.5 py-1.5 text-xs font-bold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
+                                </div>
+                            </div>
+                            <div class="p-6 flex flex-col justify-between flex-1">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-lg mb-1 group-hover:text-blue-600 transition">${p.customerName}</h4>
+                                    <p class="text-xs text-slate-500 line-clamp-1 mb-4">📍 ${p.customerAddress}</p>
+                                </div>
+                                <div class="flex justify-between items-center pt-4 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                                    <span>📸 รูปภาพในอัลบั้ม</span>
+                                    <span class="px-3 py-1 bg-slate-100 text-slate-900 rounded-xl font-bold">${count} รูป</span>
+                                </div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+
+        let currentAlbumPhotos = [];
+        let currentSlideIndex = 0;
+        let currentAlbumTitleText = "";
+
+        window.openAlbumSlider = function(projectId, photoIndex) {
+            const p = state.projects.find(x => x.id === projectId);
+            if (!p || !p.photos) return;
+            
+            currentAlbumPhotos = Object.entries(p.photos).map(([key, url]) => {
+                const conf = checklistConfig.find(c => c.key === key);
+                return { url, label: conf ? conf.label : key, addr: p.texts && p.texts[key] ? p.texts[key] : (p.customerAddress || '-') };
+            });
+
+            currentSlideIndex = photoIndex;
+            currentAlbumTitleText = `${p.code} - ${p.customerName}`;
+            updateSlideView();
+            document.getElementById('imageModal').classList.remove('hidden');
+        };
+
+        window.slideImage = function(direction) {
+            currentSlideIndex += direction;
+            if (currentSlideIndex >= currentAlbumPhotos.length) {
+                currentSlideIndex = 0;
+            } else if (currentSlideIndex < 0) {
+                currentSlideIndex = currentAlbumPhotos.length - 1;
+            }
+            updateSlideView();
+        };
+
+        function updateSlideView() {
+            if (currentAlbumPhotos.length === 0) return;
+            const item = currentAlbumPhotos[currentSlideIndex];
+            document.getElementById('modalImage').src = item.url;
+            document.getElementById('modalImageAlbumTitle').innerText = `อัลบั้ม: ${currentAlbumTitleText}`;
+            document.getElementById('modalImageCaption').innerHTML = `<strong class="text-amber-400">${item.label}</strong><br><span class="text-[11px] text-slate-300 font-mono">📍 ${item.addr}</span>`;
+            document.getElementById('modalImageCounter').innerText = `${currentSlideIndex + 1} / ${currentAlbumPhotos.length}`;
+        }
+
+        window.closeImageModal = function() {
+            document.getElementById('imageModal').classList.add('hidden');
+        };
 
         function renderCalendarTab(isAdmin) {
             const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
@@ -848,12 +1025,14 @@
         };
 
         function renderProjectsTab(projects, isAdmin) {
+            projects.sort((a, b) => new Date(b.date) - new Date(a.date));
+
             return `
             <div class="space-y-6">
                 <div class="glass-panel p-5 rounded-[2.5rem] shadow-xl flex items-center gap-3">
                     <div class="relative w-full">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
-                        <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" value="${state.searchQuery}" placeholder="ค้นหาด้วยรหัสงาน หรือชื่อลูกค้า..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
+                        <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" value="${state.searchQuery}" placeholder="พิมพ์ค้นหาแบบอิสระ (รหัส, ชื่อลูกค้า, ที่อยู่, เบอร์โทร, ช่าง)..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -879,7 +1058,7 @@
                                     </a>
                                 </div>` : ''}
 
-                                <div class="mb-4 bg-amber-50 border border-amber-200/60 p-3.5 rounded-2xl text-xs text-amber-950 relative group">
+                                <div class="mb-3 bg-amber-50 border border-amber-200/60 p-3.5 rounded-2xl text-xs text-amber-950 relative group">
                                     <div class="flex justify-between items-center mb-1">
                                         <span class="font-bold flex items-center gap-1.5 text-amber-800"><i class="fa-solid fa-note-sticky text-amber-600"></i> หมายเหตุงาน:</span>
                                         <button onclick="openQuickNotesModal('${p.id}')" class="px-2.5 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 rounded-lg text-[11px] font-bold transition flex items-center gap-1 shadow-sm"><i class="fa-solid fa-pen text-[10px]"></i> แก้ไข</button>
@@ -909,78 +1088,38 @@
             </div>`;
         }
 
-        function renderPhotosTab(isAdmin) {
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
-            let allPhotosList = [];
-            projects.forEach(p => {
-                if (p.photos) {
-                    Object.keys(p.photos).forEach(key => {
-                        const conf = checklistConfig.find(c => c.key === key);
-                        allPhotosList.push({ projectCode: p.code, customerName: p.customerName, label: conf ? conf.label : key, url: p.photos[key] });
-                    });
-                }
-            });
-
-            return `
-            <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8">
-                <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-images"></i></div> คลังรูปภาพทั้งหมด (${allPhotosList.length} รูป)</h3>
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    ${allPhotosList.map(item => `
-                        <div class="bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col">
-                            <div class="relative aspect-[4/3] bg-black cursor-pointer" onclick="openImageModal('${item.url}', '${item.projectCode} - ${item.label}')">
-                                <img src="${item.url}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="p-4 text-xs">
-                                <span class="font-mono font-bold text-blue-600 block mb-1">${item.projectCode}</span>
-                                <span class="font-semibold text-slate-900 line-clamp-1">${item.label}</span>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
-        }
-
-        function renderExportTab(isAdmin) {
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
-            
-            if (state.searchQuery.trim() !== '') {
-                const q = state.searchQuery.toLowerCase();
-                projects = projects.filter(p => 
-                    p.code.toLowerCase().includes(q) || 
-                    p.customerName.toLowerCase().includes(q) || 
-                    p.technician.toLowerCase().includes(q)
-                );
-            }
+        function renderExportTab(projects, isAdmin) {
+            projects.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             return `
             <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8 animate-in fade-in duration-300">
                 <div class="flex justify-between items-center pb-6 border-b border-slate-100">
                     <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-share-nodes"></i></div> ส่งออกรายงาน PDF (ขนาด A3 / 6 รูปต่อหน้า - ปรับลดขนาดรูปครึ่งหนึ่ง) / Excel
+                        <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-share-nodes"></i></div> ส่งออกรายงาน PDF (ขนาด A3 / 4 รูปต่อหน้า) / Excel
                     </h3>
                 </div>
 
                 <div class="relative w-full max-w-lg">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
-                    <input type="text" oninput="state.searchQuery=this.value; render();" value="${state.searchQuery}" placeholder="ค้นหาโปรเจคเพื่อส่งออก..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
+                    <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" value="${state.searchQuery}" placeholder="พิมพ์ค้นหาแบบอิสระ (รหัส, ชื่อลูกค้า, ที่อยู่, เบอร์โทร, ช่าง)..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    ${projects.map(p => {
+                    ${projects.length === 0 ? `<div class="col-span-full py-16 text-center text-slate-400">ไม่พบโปรเจคที่ค้นหา</div>` : projects.map(p => {
                         const meta = getStatusMeta(p.status);
                         return `
                         <div class="bg-white border rounded-[2.5rem] p-7 flex flex-col justify-between gap-6 shadow-sm">
                             <div>
                                 <div class="flex justify-between items-center">
                                     <span class="px-4 py-1.5 bg-blue-50 text-blue-700 font-mono font-bold text-xs rounded-2xl">${p.code}</span>
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
+                                    <span class="px-3.5 py-1.5 text-xs font-semibold rounded-2xl ${meta.bg} ${meta.text}">${meta.label}</span>
                                 </div>
                                 <h4 class="font-bold text-slate-900 text-lg mt-3 mb-1">${p.customerName}</h4>
                                 <p class="text-xs text-slate-600 mb-2">📍 ${p.customerAddress}</p>
                                 ${p.notes ? `<p class="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200/50">📝 <strong>หมายเหตุ:</strong> ${p.notes}</p>` : ''}
                             </div>
                             <div class="flex gap-2.5 pt-4 border-t">
-                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold hover:bg-rose-700 transition"><i class="fa-solid fa-file-pdf"></i> ปริ้น PDF (A3 - 6รูป/หน้า)</button>
+                                <button onclick="exportProjectPDF('${p.id}')" class="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl text-xs font-semibold hover:bg-rose-700 transition"><i class="fa-solid fa-file-pdf"></i> ปริ้น PDF (A3 - 4รูป/หน้า)</button>
                                 <button onclick="exportProjectExcel('${p.id}')" class="px-4 py-3.5 bg-emerald-600 text-white rounded-2xl text-xs font-semibold hover:bg-emerald-700 transition"><i class="fa-solid fa-file-excel"></i> Excel</button>
                                 <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-3.5 bg-indigo-600 text-white rounded-2xl text-xs font-semibold hover:bg-indigo-700 transition"><i class="fa-solid fa-file-zipper"></i> ZIP</button>
                             </div>
@@ -1017,7 +1156,13 @@
                             <p class="text-xs text-slate-500">📍 ${p.customerAddress}</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center flex-wrap gap-3">
+                        <!-- ดรอปดาวน์เลือกหัวข้อเพื่อเรียกหัวข้อนั้นมาแทนถ่ายภาพ -->
+                        <select onchange="handleHeaderDropdownSelect(this.value)" class="px-4 py-2.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                            <option value="">📸 เลือกหัวข้อเพื่อถ่ายภาพ...</option>
+                            ${checklistConfig.map(item => `<option value="${item.key}">${item.label} ${p.photos && p.photos[item.key] ? '✅' : ''}</option>`).join('')}
+                        </select>
+
                         <select onchange="updateProjectStatus('${p.id}', this.value)" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="survey" ${currentStatus === 'survey' ? 'selected' : ''}>📌 สำรวจงาน</option>
                             <option value="inprogress" ${currentStatus === 'inprogress' ? 'selected' : ''}>⚡ กำลังทำ</option>
@@ -1121,7 +1266,21 @@
             }
         };
 
-        window.handleSearchInput = function(val) { state.searchQuery = val; render(); };
+        let searchTimeout = null;
+        window.handleSearchInput = function(val) { 
+            state.searchQuery = val; 
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchEl = document.getElementById('searchInput');
+                const cursorPosition = searchEl ? searchEl.selectionStart : 0;
+                render();
+                const newSearchEl = document.getElementById('searchInput');
+                if (newSearchEl) {
+                    newSearchEl.focus();
+                    newSearchEl.setSelectionRange(cursorPosition, cursorPosition);
+                }
+            }, 300);
+        };
 
         window.openCreateProjectModal = function() {
             const techSelect = document.getElementById('newProjTech');
@@ -1280,7 +1439,7 @@
 
                     ctx.shadowBlur = 0;
 
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                     const downloadUrl = await uploadPhotoToStorage(p.id, galleryUploadKey, dataUrl);
 
                     if (!p.photos) p.photos = {};
@@ -1378,31 +1537,31 @@
             const padding = 25;
             let curY = vHeight - 75;
 
-            ctx.font = 'bold 22px sans-serif';
+            ctx.font = 'bold 44px sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.strokeText(`${timeStr}`, padding, curY);
             ctx.fillText(`${timeStr}`, padding, curY);
 
-            ctx.font = 'bold 12px sans-serif';
+            ctx.font = 'bold 24px sans-serif';
             ctx.fillStyle = '#fbbf24';
-            ctx.strokeText(`${dateStr}`, padding + 75, curY - 5);
-            ctx.fillText(`${dateStr}`, padding + 75, curY - 5);
+            ctx.strokeText(`${dateStr}`, padding + 150, curY - 10);
+            ctx.fillText(`${dateStr}`, padding + 150, curY - 10);
 
-            curY += 22;
-            ctx.font = 'bold 13px sans-serif';
+            curY += 40;
+            ctx.font = 'bold 26px sans-serif';
             ctx.fillStyle = '#60a5fa';
             ctx.strokeText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
             ctx.fillText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
 
-            curY += 20;
-            ctx.font = 'bold 11px sans-serif';
+            curY += 36;
+            ctx.font = 'bold 22px sans-serif';
             ctx.fillStyle = '#34d399';
             ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
             ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
 
             ctx.shadowBlur = 0;
 
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
             const downloadUrl = await uploadPhotoToStorage(p.id, activeCameraKey, dataUrl);
 
             if (!p.photos) p.photos = {};
@@ -1417,7 +1576,9 @@
 
         window.openImageModal = function(url, caption) {
             document.getElementById('modalImage').src = url;
+            document.getElementById('modalImageAlbumTitle').innerText = "รูปภาพ";
             document.getElementById('modalImageCaption').innerText = caption;
+            document.getElementById('modalImageCounter').innerText = "";
             document.getElementById('imageModal').classList.remove('hidden');
         };
         window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); };
@@ -1467,7 +1628,7 @@
                 return;
             }
 
-            showMessage('กำลังสร้างรายงาน PDF (ขนาด A3 / 6 รูปต่อหน้า), กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
+            showMessage('กำลังสร้างรายงาน PDF (ขนาด A3 / 4 รูปต่อหน้า), กรุณารอสักครู่...', 'fa-solid fa-spinner animate-spin');
 
             let activePhotos = [];
             for (const item of checklistConfig) {
@@ -1496,30 +1657,30 @@
             const meta = getStatusMeta(p.status);
 
             let pagesHtml = '';
-            for (let i = 0; i < activePhotos.length; i += 6) {
-                const chunk = activePhotos.slice(i, i + 6);
+            for (let i = 0; i < activePhotos.length; i += 4) {
+                const chunk = activePhotos.slice(i, i + 4);
                 let chunkCards = '';
                 chunk.forEach(photo => {
                     chunkCards += `
-                    <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 230px; box-sizing: border-box; page-break-inside: avoid;">
-                        <div style="font-weight: bold; font-size: 14px; margin-bottom: 6px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
-                        <div style="width: 100%; height: 170px; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 6px; display: flex; align-items: center; justify-content: center;">
-                            <img src="${photo.url}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: contain;" />
+                    <div style="border: 1px solid #cbd5e1; border-radius: 16px; padding: 16px; background: #f8fafc; display: flex; flex-direction: column; justify-content: space-between; height: 620px; box-sizing: border-box; page-break-inside: avoid;">
+                        <div style="font-weight: bold; font-size: 18px; margin-bottom: 10px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.label}</div>
+                        <div style="width: 100%; height: 500px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;">
+                            <img src="${photo.url}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover;" />
                         </div>
-                        <div style="font-size: 10px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
+                        <div style="font-size: 12px; color: #475569; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 ${photo.addr}</div>
                     </div>`;
                 });
 
                 pagesHtml += `
-                <div style="width: 1122px; height: 1587px; background: #ffffff; padding: 40px; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column;">
-                    <div style="border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 25px; height: 75px; box-sizing: border-box;">
-                        <h1 style="font-size: 22px; font-weight: bold; color: #1e293b; margin: 0 0 6px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (ขนาดกระดาษ A3 - หน้า ${Math.floor(i/6) + 1})</h1>
-                        <div style="font-size: 14px; color: #475569; display: flex; justify-content: space-between;">
+                <div style="width: 1122px; height: 1587px; background: #ffffff; padding: 50px; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column;">
+                    <div style="border-bottom: 3px solid #2563eb; padding-bottom: 15px; margin-bottom: 30px; height: 85px; box-sizing: border-box;">
+                        <h1 style="font-size: 24px; font-weight: bold; color: #1e293b; margin: 0 0 8px 0;">รายงานการติดตั้งสถานีชาร์จ EV Charger (ขนาดกระดาษ A3 - 4 รูปต่อหน้า - หน้า ${Math.floor(i/4) + 1})</h1>
+                        <div style="font-size: 15px; color: #475569; display: flex; justify-content: space-between;">
                             <div><strong>รหัสงาน:</strong> ${p.code} | <strong>ลูกค้า:</strong> ${p.customerName} | <strong>สถานะ:</strong> <span style="font-weight: bold;">${meta.label}</span></div>
                             <div><strong>วันที่:</strong> ${p.date}</div>
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-content: start; height: 1400px; box-sizing: border-box;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; align-content: start; height: 1350px; box-sizing: border-box;">
                         ${chunkCards}
                     </div>
                 </div>`;
