@@ -395,6 +395,7 @@
             historySearchQuery: '',
             historyMonthFilter: 'all',
             historyYearFilter: 'all',
+            albumSearchQuery: '',
             calendarViewMode: 'grid',
             calendarListMonth: String(new Date().getMonth() + 1).padStart(2, '0'),
             calendarListYear: String(new Date().getFullYear()),
@@ -713,28 +714,6 @@
             }
         }
 
-        window.handleHistorySearch = function(val) {
-            state.historySearchQuery = val;
-            const historyInputEl = document.getElementById('historySearchInput');
-            const cursorPosition = historyInputEl ? historyInputEl.selectionStart : 0;
-            render();
-            const newHistoryInputEl = document.getElementById('historySearchInput');
-            if (newHistoryInputEl) {
-                newHistoryInputEl.focus();
-                newHistoryInputEl.setSelectionRange(cursorPosition, cursorPosition);
-            }
-        };
-
-        window.handleHistoryMonthFilter = function(val) {
-            state.historyMonthFilter = val;
-            render();
-        };
-
-        window.handleHistoryYearFilter = function(val) {
-            state.historyYearFilter = val;
-            render();
-        };
-
         function renderDashboardTab() {
             const isAdmin = state.currentUser.role === 'admin';
             let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
@@ -744,39 +723,6 @@
             const issueJobs = allProj.filter(p => p.status === 'issue').length;
             const passedJobs = allProj.filter(p => p.status === 'passed').length;
             const techs = isAdmin ? state.users.filter(u => u.role === 'technician') : [state.currentUser];
-
-            let passedProjects = state.projects.filter(p => p.status === 'passed');
-
-            if (state.historyMonthFilter !== 'all' || state.historyYearFilter !== 'all') {
-                passedProjects = passedProjects.filter(p => {
-                    if (!p.date) return false;
-                    const parts = p.date.split('-');
-                    if (parts.length < 3) return false;
-                    const pYear = parts[0];
-                    const pMonth = parts[1];
-
-                    const matchYear = (state.historyYearFilter === 'all' || pYear === state.historyYearFilter);
-                    const matchMonth = (state.historyMonthFilter === 'all' || pMonth === state.historyMonthFilter);
-                    return matchYear && matchMonth;
-                });
-            }
-
-            if (state.historySearchQuery.trim() !== '') {
-                const qWords = state.historySearchQuery.toLowerCase().trim().split(/\s+/);
-                passedProjects = passedProjects.filter(p => {
-                    const txt = [p.code, p.customerName, p.technician, p.date].filter(Boolean).join(' ').toLowerCase();
-                    return qWords.every(w => txt.includes(w));
-                });
-            }
-            passedProjects.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            const availableYears = [...new Set(state.projects.map(p => p.date ? p.date.split('-')[0] : null).filter(Boolean))].sort().reverse();
-            const thaiMonths = [
-                { val: '01', name: 'มกราคม' }, { val: '02', name: 'กุมภาพันธ์' }, { val: '03', name: 'มีนาคม' },
-                { val: '04', name: 'เมษายน' }, { val: '05', name: 'พฤษภาคม' }, { val: '06', name: 'มิถุนายน' },
-                { val: '07', name: 'กรกฎาคม' }, { val: '08', name: 'สิงหาคม' }, { val: '09', name: 'กันยายน' },
-                { val: '10', name: 'ตุลาคม' }, { val: '11', name: 'พฤศจิกายน' }, { val: '12', name: 'ธันวาคม' }
-            ];
 
             return `
             <div class="space-y-8 animate-in fade-in duration-300">
@@ -841,64 +787,6 @@
                         }).join('')}
                     </div>
                 </div>
-
-                <!-- ประวัติการติดตั้ง (สถานะผ่าน พร้อมตัวกรองเดือน/ปี และนับจำนวน) -->
-                <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-6">
-                    <div class="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                            <div>
-                                <h3 class="font-bold text-xl text-slate-900">ประวัติการติดตั้ง (ข้อมูลงานสถานะผ่าน)</h3>
-                                <p class="text-xs text-slate-500 mt-0.5">จำนวนที่พบ: <strong class="text-blue-600">${passedProjects.length}</strong> รายการ</p>
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                            <!-- ตัวกรองเดือน -->
-                            <select onchange="handleHistoryMonthFilter(this.value)" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-700 focus:outline-none">
-                                <option value="all">-- ทุกเดือน --</option>
-                                ${thaiMonths.map(m => `<option value="${m.val}" ${state.historyMonthFilter === m.val ? 'selected' : ''}>${m.name}</option>`).join('')}
-                            </select>
-                            <!-- ตัวกรองปี -->
-                            <select onchange="handleHistoryYearFilter(this.value)" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-700 focus:outline-none">
-                                <option value="all">-- ทุกปี (ค.ศ.) --</option>
-                                ${availableYears.map(yr => `<option value="${yr}" ${state.historyYearFilter === yr ? 'selected' : ''}>${parseInt(yr) + 543} (${yr})</option>`).join('')}
-                            </select>
-                            <!-- ช่องค้นหาข้อความ -->
-                            <div class="relative flex-1 sm:w-60">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400"><i class="fa-solid fa-magnifying-glass text-xs"></i></span>
-                                <input type="text" id="historySearchInput" oninput="handleHistorySearch(this.value)" value="${state.historySearchQuery}" placeholder="ค้นหารหัสงาน, ชื่อช่าง..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs focus:outline-none">
-                            </div>
-                        </div>
-                    </div>
-                    ${passedProjects.length === 0 ? `<div class="py-12 text-center text-slate-400">ไม่พบประวัติการติดตั้งตามเงื่อนไขที่เลือก</div>` : `
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-200 text-xs text-slate-400 uppercase font-semibold">
-                                    <th class="py-3 px-4">รหัสงาน</th>
-                                    <th class="py-3 px-4">ชื่อลูกค้า</th>
-                                    <th class="py-3 px-4">วันที่ติดตั้ง</th>
-                                    <th class="py-3 px-4">ช่างผู้รับผิดชอบ</th>
-                                    <th class="py-3 px-4 text-right">ไฟล์ดาวน์โหลด</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 text-xs sm:text-sm font-medium text-slate-700">
-                                ${passedProjects.map(p => `
-                                <tr class="hover:bg-slate-50/80 transition">
-                                    <td class="py-4 px-4 font-mono font-bold text-blue-600">${p.code}</td>
-                                    <td class="py-4 px-4 font-bold text-slate-900">${p.customerName}</td>
-                                    <td class="py-4 px-4 text-slate-600">📅 ${p.date || '-'}</td>
-                                    <td class="py-4 px-4 text-slate-600">👷 ${p.technician || '-'}</td>
-                                    <td class="py-4 px-4 text-right">
-                                        <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 inline-flex items-center gap-2 transition active:scale-95">
-                                            <i class="fa-solid fa-file-zipper"></i> ดาวน์โหลด ZIP
-                                        </button>
-                                    </td>
-                                </tr>`).join('')}
-                            </tbody>
-                        </table>
-                    </div>`}
-                </div>
             </div>`;
         }
 
@@ -943,10 +831,49 @@
             }
         };
 
+        window.handleAlbumSearch = function(val) {
+            state.albumSearchQuery = val;
+            const searchEl = document.getElementById('albumSearchInput');
+            const cursorPosition = searchEl ? searchEl.selectionStart : 0;
+            render();
+            const newSearchEl = document.getElementById('albumSearchInput');
+            if (newSearchEl) {
+                newSearchEl.focus();
+                newSearchEl.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        };
+
         function renderPhotosTab(isAdmin) {
             let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
             projects = projects.filter(p => p.status === 'passed');
-            projects.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // กรองด้วยช่องค้นหา (แบบเดียวกับหน้า รายการงาน)
+            if (state.albumSearchQuery.trim() !== '') {
+                const queryWords = state.albumSearchQuery.toLowerCase().trim().split(/\s+/);
+                projects = projects.filter(p => {
+                    const searchableText = [
+                        p.code,
+                        p.customerName,
+                        p.customerAddress,
+                        p.customerPhone,
+                        p.technician,
+                        p.notes,
+                        p.date
+                    ].filter(Boolean).join(' ').toLowerCase();
+
+                    return queryWords.every(word => searchableText.includes(word));
+                });
+            }
+
+            // จัดเรียง: วันที่ปัจจุบัน (Today) หรือวันที่ล่าสุดขึ้นบนเสมอ
+            const todayStr = new Date().toISOString().split('T')[0];
+            projects.sort((a, b) => {
+                const isAToday = (a.date === todayStr);
+                const isBToday = (b.date === todayStr);
+                if (isAToday && !isBToday) return -1;
+                if (!isAToday && isBToday) return 1;
+                return new Date(b.date) - new Date(a.date);
+            });
 
             if (state.selectedAlbumId) {
                 const p = projects.find(x => x.id === state.selectedAlbumId);
@@ -994,45 +921,57 @@
             }
 
             return `
-            <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8 animate-in fade-in duration-300">
-                <div class="flex justify-between items-center pb-6 border-b border-slate-100">
-                    <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-images"></i></div> อัลบั้มรูปภาพงานที่ผ่านการตรวจสอบแล้ว (Pass)</h3>
+            <div class="space-y-6 animate-in fade-in duration-300">
+                <div class="glass-panel p-5 rounded-[2.5rem] shadow-xl flex items-center gap-3">
+                    <div class="relative w-full">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="text" id="albumSearchInput" oninput="handleAlbumSearch(this.value)" value="${state.albumSearchQuery || ''}" placeholder="พิมพ์ค้นหาแบบอิสระ (รหัส, ชื่อลูกค้า, ที่อยู่, เบอร์โทร, ช่าง)..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
+                    </div>
                 </div>
-                ${projects.length === 0 ? `<div class="py-16 text-center text-slate-400">ยังไม่มีงานที่มีสถานะ "ผ่าน" (Pass)</div>` : `
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${projects.map(p => {
-                        const photosObj = p.photos || {};
-                        const photoKeys = Object.keys(photosObj);
-                        const count = photoKeys.length;
-                        const firstPhotoUrl = count > 0 ? photosObj[photoKeys[0]] : 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?q=80&w=400&auto=format&fit=crop';
-                        const meta = getStatusMeta(p.status);
 
-                        return `
-                        <div class="bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col justify-between group transition duration-300">
-                            <div onclick="openAlbum('${p.id}')" class="relative aspect-[16/9] bg-slate-900 overflow-hidden cursor-pointer">
-                                <img src="${firstPhotoUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90">
-                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
-                                <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
-                                    <span class="px-3.5 py-1.5 bg-blue-600 text-white font-mono font-bold text-xs rounded-xl shadow-lg">${p.code}</span>
-                                    <span class="px-3.5 py-1.5 text-xs font-bold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
-                                </div>
-                            </div>
-                            <div class="p-6 flex flex-col justify-between flex-1">
-                                <div onclick="openAlbum('${p.id}')" class="cursor-pointer">
-                                    <h4 class="font-bold text-slate-900 text-lg mb-1 group-hover:text-blue-600 transition">${p.customerName}</h4>
-                                    <p class="text-xs text-slate-500 line-clamp-1 mb-4">📍 ${p.customerAddress}</p>
-                                </div>
-                                <div class="flex justify-between items-center pt-4 border-t border-slate-100 text-xs font-semibold text-slate-500">
-                                    <span>📸 ${count} รูป</span>
-                                    <div class="flex items-center gap-2">
-                                        <button onclick="openAlbum('${p.id}')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl font-bold transition">เปิดดู</button>
-                                        <button onclick="promptDeleteAlbum('${p.id}', event)" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold transition" title="ลบรูปในอัลบั้ม"><i class="fa-solid fa-trash"></i> ลบอัลบั้ม</button>
+                <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-8">
+                    <div class="flex justify-between items-center pb-6 border-b border-slate-100">
+                        <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-images"></i></div> อัลบั้มรูปภาพงานที่ผ่านการตรวจสอบแล้ว (Pass)</h3>
+                    </div>
+                    ${projects.length === 0 ? `<div class="py-16 text-center text-slate-400">ยังไม่มีงานที่มีสถานะ "ผ่าน" (Pass) หรือไม่พบข้อมูลที่ค้นหา</div>` : `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${projects.map(p => {
+                            const photosObj = p.photos || {};
+                            const photoKeys = Object.keys(photosObj);
+                            const count = photoKeys.length;
+                            const firstPhotoUrl = count > 0 ? photosObj[photoKeys[0]] : 'https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?q=80&w=400&auto=format&fit=crop';
+                            const meta = getStatusMeta(p.status);
+                            const isTodayJob = (p.date === todayStr);
+
+                            return `
+                            <div class="bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-sm flex flex-col justify-between group transition duration-300 relative ${isTodayJob ? 'ring-2 ring-blue-500 shadow-blue-500/10' : ''}">
+                                ${isTodayJob ? `<div class="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-md z-10">🔥 งานวันนี้</div>` : ''}
+                                <div onclick="openAlbum('${p.id}')" class="relative aspect-[16/9] bg-slate-900 overflow-hidden cursor-pointer">
+                                    <img src="${firstPhotoUrl}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                                        <span class="px-3.5 py-1.5 bg-blue-600 text-white font-mono font-bold text-xs rounded-xl shadow-lg">${p.code}</span>
+                                        <span class="px-3.5 py-1.5 text-xs font-bold rounded-xl ${meta.bg} ${meta.text}">${meta.label}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>`}
+                                <div class="p-6 flex flex-col justify-between flex-1">
+                                    <div onclick="openAlbum('${p.id}')" class="cursor-pointer">
+                                        <h4 class="font-bold text-slate-900 text-lg mb-1 group-hover:text-blue-600 transition">${p.customerName}</h4>
+                                        <p class="text-xs text-slate-500 line-clamp-1 mb-2">📍 ${p.customerAddress}</p>
+                                        <p class="text-[11px] text-slate-400 font-medium mb-4">📅 วันที่ติดตั้ง: <strong class="text-slate-700">${p.date || '-'}</strong></p>
+                                    </div>
+                                    <div class="flex justify-between items-center pt-4 border-t border-slate-100 text-xs font-semibold text-slate-500">
+                                        <span>📸 ${count} รูป</span>
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="openAlbum('${p.id}')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl font-bold transition">เปิดดู</button>
+                                            <button onclick="promptDeleteAlbum('${p.id}', event)" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold transition" title="ลบรูปในอัลบั้ม"><i class="fa-solid fa-trash"></i> ลบอัลบั้ม</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>`}
+                </div>
             </div>`;
         }
 
