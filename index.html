@@ -1234,7 +1234,7 @@
                             return `
                             <div onclick="selectProject('${p.id}')" class="p-2 rounded-xl text-[11px] font-medium cursor-pointer transition border ${meta.bg} ${meta.text}">
                                 <div class="font-bold truncate flex items-center justify-between">
-                                    <span>${p.code}</span>
+                                    <span>${p.technician || '-'}</span>
                                     <span class="text-[9px] opacity-75">${p.timeStart || ''}</span>
                                 </div>
                                 <div class="truncate text-[10px] font-bold opacity-90">${locLabel || '-'}</div>
