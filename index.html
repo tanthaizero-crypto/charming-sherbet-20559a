@@ -137,6 +137,24 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="newProjDeviceStatus" id="newProjReceived" value="received" onchange="toggleCreateDeviceStatus()" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                            <span class="text-xs font-bold text-slate-800">ได้รับเครื่องแล้ว</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="newProjDeviceStatus" id="newProjNotReceived" value="not_received" onchange="toggleCreateDeviceStatus()" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                            <span class="text-xs font-bold text-slate-800">ยังไม่ได้รับเครื่อง</span>
+                        </label>
+                    </div>
+                    <div id="newProjReplacementWrapper" class="hidden pt-2 border-t border-slate-200">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">ใช้เครื่องทดแทนของ</label>
+                        <input type="text" id="newProjReplacement" placeholder="ระบุชื่อแบรนด์หรือรายละเอียด..." class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1.5">หมายเหตุงาน</label>
                     <textarea id="newProjNotes" rows="2" placeholder="รายละเอียดเพิ่มเติม..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
@@ -212,6 +230,24 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="editProjDeviceStatus" id="editProjReceived" value="received" onchange="toggleEditDeviceStatus()" class="w-4 h-4 accent-amber-600 cursor-pointer">
+                            <span class="text-xs font-bold text-slate-800">ได้รับเครื่องแล้ว</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="radio" name="editProjDeviceStatus" id="editProjNotReceived" value="not_received" onchange="toggleEditDeviceStatus()" class="w-4 h-4 accent-amber-600 cursor-pointer">
+                            <span class="text-xs font-bold text-slate-800">ยังไม่ได้รับเครื่อง</span>
+                        </label>
+                    </div>
+                    <div id="editProjReplacementWrapper" class="hidden pt-2 border-t border-slate-200">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">ใช้เครื่องทดแทนของ</label>
+                        <input type="text" id="editProjReplacement" placeholder="ระบุชื่อแบรนด์หรือรายละเอียด..." class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition">
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1.5">หมายเหตุงาน</label>
                     <textarea id="editProjNotes" rows="2" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
@@ -412,6 +448,7 @@
             activeTab: 'dashboard',
             filterStatus: 'all',
             searchQuery: '',
+            calendarSearchQuery: '',
             historySearchQuery: '',
             historyMonthFilter: 'all',
             historyYearFilter: 'all',
@@ -657,7 +694,8 @@
                         p.customerPhone,
                         p.technician,
                         p.notes,
-                        p.date
+                        p.date,
+                        p.replacementDevice
                     ].filter(Boolean).join(' ').toLowerCase();
 
                     return queryWords.every(word => searchableText.includes(word));
@@ -1004,7 +1042,8 @@
                         p.customerPhone,
                         p.technician,
                         p.notes,
-                        p.date
+                        p.date,
+                        p.replacementDevice
                     ].filter(Boolean).join(' ').toLowerCase();
 
                     return queryWords.every(word => searchableText.includes(word));
@@ -1179,6 +1218,18 @@
             render();
         };
 
+        window.handleCalendarSearch = function(val) {
+            state.calendarSearchQuery = val;
+            const searchEl = document.getElementById('calendarSearchInput');
+            const cursorPosition = searchEl ? searchEl.selectionStart : 0;
+            render();
+            const newSearchEl = document.getElementById('calendarSearchInput');
+            if (newSearchEl) {
+                newSearchEl.focus();
+                newSearchEl.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        };
+
         window.handleCalendarListMonth = function(val) {
             state.calendarListMonth = val;
             render();
@@ -1198,6 +1249,15 @@
 
             let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
 
+            // กรองตามคำค้นหาในปฏิทิน
+            if (state.calendarSearchQuery.trim() !== '') {
+                const qWords = state.calendarSearchQuery.toLowerCase().trim().split(/\s+/);
+                projects = projects.filter(p => {
+                    const txt = [p.code, p.customerName, p.customerAddress, p.district, p.province, p.customerPhone, p.technician, p.notes, p.date, p.replacementDevice].filter(Boolean).join(' ').toLowerCase();
+                    return qWords.every(w => txt.includes(w));
+                });
+            }
+
             let listProjects = projects.filter(p => {
                 if (!p.date) return false;
                 const parts = p.date.split('-');
@@ -1206,7 +1266,7 @@
             });
             listProjects.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            const availableYears = [...new Set(projects.map(p => p.date ? p.date.split('-')[0] : null).filter(Boolean))].sort().reverse();
+            const availableYears = [...new Set(state.projects.map(p => p.date ? p.date.split('-')[0] : null).filter(Boolean))].sort().reverse();
             if (!availableYears.includes(state.calendarListYear)) availableYears.push(state.calendarListYear);
 
             let calendarCells = '';
@@ -1232,7 +1292,7 @@
                             const meta = getStatusMeta(p.status);
                             const locLabel = [p.district, p.province].filter(Boolean).join(' ');
                             return `
-                            <div onclick="selectProject('${p.id}')" class="p-2 rounded-xl text-[11px] font-medium cursor-pointer transition border ${meta.bg} ${meta.text}">
+                            <div onclick="${isAdmin ? `openEditProjectModal('${p.id}')` : `selectProject('${p.id}')`}" class="p-2 rounded-xl text-[11px] font-medium cursor-pointer transition border ${meta.bg} ${meta.text}" title="${isAdmin ? 'คลิกเพื่อแก้ไขข้อมูลโปรเจค (Admin)' : 'คลิกเพื่อดูรายละเอียดงาน'}">
                                 <div class="font-bold truncate flex items-center justify-between">
                                     <span>${p.technician || '-'}</span>
                                     <span class="text-[9px] opacity-75">${p.timeStart || ''}</span>
@@ -1246,6 +1306,12 @@
 
             return `
             <div class="glass-panel rounded-[2.5rem] p-6 sm:p-10 shadow-xl space-y-6">
+                <!-- แถบค้นหาในหน้าปฏิทิน -->
+                <div class="relative w-full">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="calendarSearchInput" oninput="handleCalendarSearch(this.value)" value="${state.calendarSearchQuery || ''}" placeholder="ค้นหาในปฏิทิน (รหัสงาน, ชื่อลูกค้า, ช่าง, ที่อยู่)..." class="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none">
+                </div>
+
                 <div class="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
                     <div>
                         <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-calendar-days"></i></div> ปฏิทินนัดหมาย</h3>
@@ -1416,6 +1482,17 @@
                                 <p class="text-xs text-slate-600 mb-1 line-clamp-2">📍 ${p.customerAddress}</p>
                                 ${locText ? `<p class="text-xs font-semibold text-blue-600 mb-3">📍 เขต/อำเภอ: ${locText}</p>` : ''}
                                 
+                                <!-- แสดงสถานะได้รับเครื่อง / ยังไม่ได้รับเครื่อง ในการ์ดรายการงาน -->
+                                ${p.deviceStatus === 'received' ? `
+                                <div class="mb-3 bg-emerald-50 border border-emerald-200/70 p-3 rounded-2xl text-xs text-emerald-900">
+                                    <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-box-archive text-emerald-600"></i> ได้รับเครื่องแล้ว</div>
+                                </div>` : ''}
+                                ${p.deviceStatus === 'not_received' ? `
+                                <div class="mb-3 bg-rose-50 border border-rose-200/70 p-3 rounded-2xl text-xs text-rose-900">
+                                    <div class="font-bold flex items-center gap-1.5 mb-0.5"><i class="fa-solid fa-circle-exclamation text-rose-600"></i> ยังไม่ได้รับเครื่อง</div>
+                                    ${p.replacementDevice ? `<div>ใช้เครื่องทดแทนของ: <strong class="text-rose-950">${p.replacementDevice}</strong></div>` : ''}
+                                </div>` : ''}
+
                                 ${p.mapLink ? `
                                 <div class="mb-3">
                                     <a href="${p.mapLink}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-xs font-bold transition shadow-sm">
@@ -1483,6 +1560,8 @@
                                 <h4 class="font-bold text-slate-900 text-lg mt-3 mb-1">${p.customerName}</h4>
                                 <p class="text-xs text-slate-600 mb-1">📍 ${p.customerAddress}</p>
                                 ${locText ? `<p class="text-xs font-semibold text-blue-600 mb-2">📍 เขต/อำเภอ: ${locText}</p>` : ''}
+                                ${p.deviceStatus === 'received' ? `<p class="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200/50 mb-2">📦 <strong>ได้รับเครื่องแล้ว</strong></p>` : ''}
+                                ${p.deviceStatus === 'not_received' ? `<p class="text-xs text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200/50 mb-2">⚠️ <strong>ยังไม่ได้รับเครื่อง</strong> ${p.replacementDevice ? `(ใช้เครื่องทดแทนของ: ${p.replacementDevice})` : ''}</p>` : ''}
                                 ${p.notes ? `<p class="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200/50">📝 <strong>หมายเหตุ:</strong> ${p.notes}</p>` : ''}
                             </div>
                             <div class="flex gap-2.5 pt-4 border-t">
@@ -1659,10 +1738,36 @@
             }, 300);
         };
 
+        window.toggleCreateDeviceStatus = function() {
+            const isNotReceived = document.getElementById('newProjNotReceived').checked;
+            const wrapper = document.getElementById('newProjReplacementWrapper');
+            if (isNotReceived) {
+                wrapper.classList.remove('hidden');
+            } else {
+                wrapper.classList.add('hidden');
+                document.getElementById('newProjReplacement').value = '';
+            }
+        };
+
+        window.toggleEditDeviceStatus = function() {
+            const isNotReceived = document.getElementById('editProjNotReceived').checked;
+            const wrapper = document.getElementById('editProjReplacementWrapper');
+            if (isNotReceived) {
+                wrapper.classList.remove('hidden');
+            } else {
+                wrapper.classList.add('hidden');
+                document.getElementById('editProjReplacement').value = '';
+            }
+        };
+
         window.openCreateProjectModal = function() {
             const techSelect = document.getElementById('newProjTech');
             techSelect.innerHTML = '<option value="">-- เลือกช่าง --</option>' + state.users.filter(u => u.role === 'technician').map(t => `<option value="${t.name}">${t.name}</option>`).join('');
             document.getElementById('newProjDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('newProjReceived').checked = false;
+            document.getElementById('newProjNotReceived').checked = false;
+            document.getElementById('newProjReplacement').value = '';
+            document.getElementById('newProjReplacementWrapper').classList.add('hidden');
             document.getElementById('createProjectModal').classList.remove('hidden');
         };
 
@@ -1670,6 +1775,12 @@
 
         window.handleCreateProject = async function(e) {
             e.preventDefault();
+            const isRec = document.getElementById('newProjReceived').checked;
+            const isNotRec = document.getElementById('newProjNotReceived').checked;
+            let statusVal = '';
+            if (isRec) statusVal = 'received';
+            else if (isNotRec) statusVal = 'not_received';
+
             const newProj = {
                 id: 'PROJ_' + Date.now(),
                 code: document.getElementById('newProjCode').value.trim(),
@@ -1683,6 +1794,8 @@
                 date: document.getElementById('newProjDate').value,
                 timeStart: document.getElementById('newProjTimeStart').value.trim(),
                 timeEnd: document.getElementById('newProjTimeEnd').value.trim(),
+                deviceStatus: statusVal,
+                replacementDevice: isNotRec ? document.getElementById('newProjReplacement').value.trim() : '',
                 notes: document.getElementById('newProjNotes').value.trim(),
                 status: 'survey',
                 photos: {}, texts: {}, itemNotes: {}
@@ -1709,6 +1822,19 @@
             document.getElementById('editProjDate').value = p.date || '';
             document.getElementById('editProjTimeStart').value = p.timeStart || '';
             document.getElementById('editProjTimeEnd').value = p.timeEnd || '';
+            
+            const devStatus = p.deviceStatus || '';
+            document.getElementById('editProjReceived').checked = (devStatus === 'received');
+            document.getElementById('editProjNotReceived').checked = (devStatus === 'not_received');
+            document.getElementById('editProjReplacement').value = p.replacementDevice || '';
+            
+            const repWrapper = document.getElementById('editProjReplacementWrapper');
+            if (devStatus === 'not_received') {
+                repWrapper.classList.remove('hidden');
+            } else {
+                repWrapper.classList.add('hidden');
+            }
+
             document.getElementById('editProjNotes').value = p.notes || '';
             document.getElementById('editProjectModal').classList.remove('hidden');
         };
@@ -1731,6 +1857,15 @@
             p.date = document.getElementById('editProjDate').value;
             p.timeStart = document.getElementById('editProjTimeStart').value.trim();
             p.timeEnd = document.getElementById('editProjTimeEnd').value.trim();
+            
+            const isRec = document.getElementById('editProjReceived').checked;
+            const isNotRec = document.getElementById('editProjNotReceived').checked;
+            if (isRec) p.deviceStatus = 'received';
+            else if (isNotRec) p.deviceStatus = 'not_received';
+            else p.deviceStatus = '';
+
+            p.replacementDevice = isNotRec ? document.getElementById('editProjReplacement').value.trim() : '';
+
             p.notes = document.getElementById('editProjNotes').value.trim();
             await saveProjectToFirestore(p);
             closeEditProjectModal();
