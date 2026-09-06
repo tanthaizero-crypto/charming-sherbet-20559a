@@ -37,7 +37,7 @@
     <!-- Firebase Sync Status Bar -->
     <div class="bg-slate-900 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-between gap-2 shadow-md shrink-0">
         <div class="flex items-center gap-2 flex-1 justify-center text-emerald-400 font-bold">
-            <i class="fa-solid fa-fire animate-pulse text-amber-400"></i> 🔥 <span id="sheetStatusText">เชื่อมต่อระบบ Firebase Firestore เรียบร้อยแล้ว (Real-time Sync)</span>[cite: 1]
+            <i class="fa-solid fa-fire animate-pulse text-amber-400"></i> 🔥 <span id="sheetStatusText">เชื่อมต่อระบบ Firebase Firestore เรียบร้อยแล้ว (Real-time Sync)</span>
         </div>
     </div>
 
@@ -786,6 +786,7 @@
         function getStatusMeta(status) {
             switch(status) {
                 case 'survey': return { label: 'สำรวจงาน', bg: 'bg-purple-100', text: 'text-purple-700' };
+                case 'waiting_charger': return { label: 'รอติดเครื่องชาร์จ', bg: 'bg-cyan-100', text: 'text-cyan-700' };
                 case 'inprogress': return { label: 'กำลังทำ', bg: 'bg-amber-100', text: 'text-amber-700' };
                 case 'issue': return { label: 'งานติดปัญหา', bg: 'bg-rose-100', text: 'text-rose-700' };
                 case 'passed': return { label: 'ผ่าน', bg: 'bg-emerald-100', text: 'text-emerald-700' };
@@ -820,6 +821,7 @@
             let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
             const totalJobs = allProj.length;
             const surveyJobs = allProj.filter(p => p.status === 'survey').length;
+            const waitingChargerJobs = allProj.filter(p => p.status === 'waiting_charger').length;
             const inProgressJobs = allProj.filter(p => !p.status || p.status === 'inprogress').length;
             const issueJobs = allProj.filter(p => p.status === 'issue').length;
             const passedJobs = allProj.filter(p => p.status === 'passed').length;
@@ -858,14 +860,24 @@
                 { val: '10', name: 'ตุลาคม' }, { val: '11', name: 'พฤศจิกายน' }, { val: '12', name: 'ธันวาคม' }
             ];
 
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             return `
             <div class="space-y-8 animate-in fade-in duration-300">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
                         <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-compass-drafting"></i></div>
                         <div>
                             <p class="text-[10px] font-semibold text-slate-400 uppercase">สำรวจงาน</p>
                             <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${surveyJobs}</h3>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
+                        <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center text-xl font-bold"><i class="fa-solid fa-bolt"></i></div>
+                        <div>
+                            <p class="text-[10px] font-semibold text-slate-400 uppercase">รอติดเครื่องชาร์จ</p>
+                            <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">${waitingChargerJobs}</h3>
                         </div>
                     </div>
                     <div class="glass-panel p-5 rounded-[2rem] shadow-xl flex items-center gap-4">
@@ -922,7 +934,7 @@
                     </div>
                 </div>
 
-                <!-- ประวัติการติดตั้ง (สถานะผ่าน พร้อมตัวกรองเดือน/ปี และนับจำนวน) -->
+                <!-- ประวัติการติดตั้ง (สถานะผ่าน พร้อมตัวกรองเดือน/ปี นับจำนวน และคำนวณอายุงานเป็นวัน) -->
                 <div class="glass-panel rounded-[2.5rem] p-8 shadow-xl space-y-6">
                     <div class="flex flex-wrap justify-between items-center gap-4 pb-6 border-b border-slate-100">
                         <div class="flex items-center gap-3">
@@ -958,23 +970,35 @@
                                     <th class="py-3 px-4">รหัสงาน</th>
                                     <th class="py-3 px-4">ชื่อลูกค้า</th>
                                     <th class="py-3 px-4">วันที่ติดตั้ง</th>
+                                    <th class="py-3 px-4">อายุงาน</th>
                                     <th class="py-3 px-4">ช่างผู้รับผิดชอบ</th>
                                     <th class="py-3 px-4 text-right">ไฟล์ดาวน์โหลด</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-xs sm:text-sm font-medium text-slate-700">
-                                ${passedProjects.map(p => `
-                                <tr class="hover:bg-slate-50/80 transition">
-                                    <td class="py-4 px-4 font-mono font-bold text-blue-600">${p.code}</td>
-                                    <td class="py-4 px-4 font-bold text-slate-900">${p.customerName}</td>
-                                    <td class="py-4 px-4 text-slate-600">📅 ${p.date || '-'}</td>
-                                    <td class="py-4 px-4 text-slate-600">👷 ${p.technician || '-'}</td>
-                                    <td class="py-4 px-4 text-right">
-                                        <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 inline-flex items-center gap-2 transition active:scale-95">
-                                            <i class="fa-solid fa-file-zipper"></i> ดาวน์โหลด ZIP
-                                        </button>
-                                    </td>
-                                </tr>`).join('')}
+                                ${passedProjects.map(p => {
+                                    let diffDays = 0;
+                                    if (p.date) {
+                                        const pDate = new Date(p.date);
+                                        pDate.setHours(0, 0, 0, 0);
+                                        const timeDiff = today - pDate;
+                                        diffDays = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                                        if (diffDays < 0) diffDays = 0;
+                                    }
+                                    return `
+                                    <tr class="hover:bg-slate-50/80 transition">
+                                        <td class="py-4 px-4 font-mono font-bold text-blue-600">${p.code}</td>
+                                        <td class="py-4 px-4 font-bold text-slate-900">${p.customerName}</td>
+                                        <td class="py-4 px-4 text-slate-600">📅 ${p.date || '-'}</td>
+                                        <td class="py-4 px-4 font-bold text-indigo-600">${diffDays} วัน</td>
+                                        <td class="py-4 px-4 text-slate-600">👷 ${p.technician || '-'}</td>
+                                        <td class="py-4 px-4 text-right">
+                                            <button onclick="exportProjectZIP('${p.id}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 inline-flex items-center gap-2 transition active:scale-95">
+                                                <i class="fa-solid fa-file-zipper"></i> ดาวน์โหลด ZIP
+                                            </button>
+                                        </td>
+                                    </tr>`;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>`}
@@ -1634,6 +1658,7 @@
 
                         <select onchange="updateProjectStatus('${p.id}', this.value)" class="px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="survey" ${currentStatus === 'survey' ? 'selected' : ''}>📌 สำรวจงาน</option>
+                            <option value="waiting_charger" ${currentStatus === 'waiting_charger' ? 'selected' : ''}>⚡ รอติดเครื่องชาร์จ</option>
                             <option value="inprogress" ${currentStatus === 'inprogress' ? 'selected' : ''}>⚡ กำลังทำ</option>
                             <option value="issue" ${currentStatus === 'issue' ? 'selected' : ''}>⚠️ งานติดปัญหา</option>
                             <option value="passed" ${currentStatus === 'passed' ? 'selected' : ''}>✅ ผ่าน (Pass)</option>
