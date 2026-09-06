@@ -37,7 +37,7 @@
     <!-- Firebase Sync Status Bar -->
     <div class="bg-slate-900 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-between gap-2 shadow-md shrink-0">
         <div class="flex items-center gap-2 flex-1 justify-center text-emerald-400 font-bold">
-            <i class="fa-solid fa-fire animate-pulse text-amber-400"></i> 🔥 <span id="sheetStatusText">เชื่อมต่อระบบ Firebase Firestore เรียบร้อยแล้ว (Real-time Sync)</span>
+            <i class="fa-solid fa-fire animate-pulse text-amber-400"></i> 🔥 <span id="sheetStatusText">เชื่อมต่อระบบ Firebase Firestore เรียบร้อยแล้ว (Real-time Sync)</span>[cite: 1]
         </div>
     </div>
 
@@ -254,6 +254,7 @@
                 </div>
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeEditProjectModal()" class="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-sm transition">ยกเลิก</button>
+                    <button type="button" onclick="goToProjectChecklistFromEdit()" class="px-5 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/30 transition flex items-center justify-center gap-2"><i class="fa-solid fa-camera"></i> เช็คลิสต์</button>
                     <button type="submit" class="flex-1 py-4 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-amber-600/30 transition">บันทึกแก้ไข</button>
                 </div>
             </form>
@@ -460,7 +461,7 @@
             calendarMonth: new Date().getMonth()
         };
 
-        let cachedGlobalAddress = "กำลังดึงพิกัด GPS อัตโนมัติ...";
+        let cachedGlobalAddress = "พร้อมใช้งานพิกัด GPS";
         function requestGlobalGeolocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -482,6 +483,24 @@
                 }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 });
             }
         }
+
+        window.openProjectGPS = function() {
+            if (!state.selectedProjectId) return;
+            const p = state.projects.find(x => x.id === state.selectedProjectId);
+            if (p && p.mapLink) {
+                window.open(p.mapLink, '_blank');
+            } else {
+                showMessage('ยังไม่ได้ระบุ Google Maps Link ในข้อมูลโปรเจคนี้', 'fa-solid fa-triangle-exclamation');
+            }
+        };
+
+        window.goToProjectChecklistFromEdit = function() {
+            const id = document.getElementById('editProjId').value;
+            if (id) {
+                closeEditProjectModal();
+                selectProject(id);
+            }
+        };
 
         const savedInitialState = localStorage.getItem('ev_charger_app_state');
         if (savedInitialState) {
@@ -740,7 +759,7 @@
                         <button onclick="switchTab('dashboard')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-chart-pie"></i> แดชบอร์ด</button>
                         <button onclick="switchTab('projects')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'projects' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-list-check"></i> รายการงาน (${filteredProjects.length})</button>
                         <button onclick="switchTab('calendar')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'calendar' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-calendar-days"></i> ปฏิทิน</button>
-                        <button onclick="switchTab('photos')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'photos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-images"></i> อัลบั้มรูปงาน</button>
+                        ${isAdmin ? `<button onclick="switchTab('photos')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'photos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-images"></i> อัลบั้มรูปงาน</button>` : ''}
                         ${isAdmin ? `<button onclick="switchTab('users')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-users"></i> จัดการผู้ใช้</button>` : ''}
                         <button onclick="switchTab('export')" class="px-5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition shrink-0 flex items-center gap-2.5 ${state.activeTab === 'export' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-600 hover:bg-slate-200'}"><i class="fa-solid fa-share-nodes"></i> ส่งออก PDF/Excel</button>
                     </div>
@@ -751,7 +770,7 @@
                 ${state.activeTab === 'dashboard' ? renderDashboardTab() : ''}
                 ${state.activeTab === 'projects' ? renderProjectsTab(filteredProjects, isAdmin) : ''}
                 ${state.activeTab === 'calendar' ? renderCalendarTab(isAdmin) : ''}
-                ${state.activeTab === 'photos' ? renderPhotosTab(isAdmin) : ''}
+                ${state.activeTab === 'photos' && isAdmin ? renderPhotosTab(isAdmin) : ''}
                 ${state.activeTab === 'users' && isAdmin ? renderUsersTab() : ''}
                 ${state.activeTab === 'export' ? renderExportTab(filteredProjects, isAdmin) : ''}
             </main>`;
@@ -1629,6 +1648,7 @@
                         <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-list-check"></i></div> เช็คลิสต์รายการรูปภาพ (${checklistConfig.length} รายการ)</h3>
                         <div class="flex items-center gap-2.5">
                             ${p.customerPhone ? `<a href="tel:${p.customerPhone}" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-bold shadow-md shadow-emerald-600/30 inline-flex items-center gap-2 transition active:scale-95"><i class="fa-solid fa-phone"></i> โทร (${p.customerPhone})</a>` : ''}
+                            <button onclick="openProjectGPS()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold shadow-md shadow-indigo-600/30 inline-flex items-center gap-2 transition active:scale-95"><i class="fa-solid fa-location-crosshairs"></i> GPS</button>
                             <button onclick="openQuickNotesModal('${p.id}')" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-xs font-bold shadow-md shadow-amber-500/30 inline-flex items-center gap-2 transition active:scale-95"><i class="fa-solid fa-note-sticky"></i> หมายเหตุงาน</button>
                         </div>
                     </div>
