@@ -441,6 +441,7 @@
             projects: [],
             users: [
                 { username: 'admin', pin: '1234', role: 'admin', name: 'ผู้ดูแลระบบ (Admin)', status: 'approved', email: 'admin@evcharger.com', phone: '0800000000' },
+                { username: 'EV123', pin: '1234', role: 'technician', name: 'EV123', status: 'approved', email: 'ev123@evcharger.com', phone: '0899999999' },
                 { username: 'tech1', pin: '1234', role: 'technician', name: 'ช่างสมหมาย', status: 'approved', email: 'tech1@evcharger.com', phone: '0811111111' },
                 { username: 'tech2', pin: '1234', role: 'technician', name: 'ช่างประเสริฐ', status: 'approved', email: 'tech2@evcharger.com', phone: '0822222222' }
             ],
@@ -523,6 +524,9 @@
                     const loadedUsers = snapshot.docs.map(doc => doc.data());
                     if (!loadedUsers.some(u => u.username === 'admin')) {
                         loadedUsers.push({ username: 'admin', pin: '1234', role: 'admin', name: 'ผู้ดูแลระบบ (Admin)', status: 'approved', email: 'admin@evcharger.com', phone: '0800000000' });
+                    }
+                    if (!loadedUsers.some(u => u.username === 'EV123')) {
+                        loadedUsers.push({ username: 'EV123', pin: '1234', role: 'technician', name: 'EV123', status: 'approved', email: 'ev123@evcharger.com', phone: '0899999999' });
                     }
                     state.users = loadedUsers;
                 } else {
@@ -734,8 +738,9 @@
         function renderMainDashboard() {
             const isAdmin = state.currentUser.role === 'admin';
             const techName = state.currentUser.name;
+            const currentUsername = state.currentUser.username;
 
-            let baseProjects = isAdmin ? state.projects : state.projects.filter(p => p.technician === techName && p.status !== 'passed');
+            let baseProjects = isAdmin ? state.projects : state.projects.filter(p => (p.technician === techName || p.technician === currentUsername) && p.status !== 'passed');
             let filteredProjects = filterProjects(baseProjects);
 
             return `
@@ -818,7 +823,7 @@
 
         function renderDashboardTab() {
             const isAdmin = state.currentUser.role === 'admin';
-            let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
+            let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name || p.technician === state.currentUser.username);
             const totalJobs = allProj.length;
             const surveyJobs = allProj.filter(p => p.status === 'survey').length;
             const waitingChargerJobs = allProj.filter(p => p.status === 'waiting_charger').length;
@@ -907,7 +912,7 @@
                     <h3 class="font-bold text-xl text-slate-900 mb-6 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-users-gear"></i></div> สถิติช่าง</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         ${techs.map(t => {
-                            const tJobs = state.projects.filter(p => p.technician === t.name);
+                            const tJobs = state.projects.filter(p => p.technician === t.name || p.technician === t.username);
                             let totalPhotos = 0;
                             tJobs.forEach(j => totalPhotos += Object.keys(j.photos || {}).length);
                             return `
@@ -1070,7 +1075,7 @@
         };
 
         function renderPhotosTab(isAdmin) {
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
+            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name || p.technician === state.currentUser.username);
             projects = projects.filter(p => p.status === 'passed');
 
             if (state.albumSearchQuery.trim() !== '') {
@@ -1290,7 +1295,12 @@
             const firstDayIndex = new Date(year, month, 1).getDay();
             const totalDays = new Date(year, month + 1, 0).getDate();
 
-            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name);
+            const currentUsername = state.currentUser ? (state.currentUser.username || '') : '';
+            const currentTechName = state.currentUser ? (state.currentUser.name || '') : '';
+
+            // ถ้าเป็น Admin จะเห็นทุกงาน
+            // ถ้าเป็นช่าง/ผู้ใช้ทั่วไป จะเห็นเฉพาะงานที่เป็นของตนเอง (ตรงกับชื่อ หรือ username)
+            let projects = isAdmin ? state.projects : state.projects.filter(p => p.technician === currentTechName || p.technician === currentUsername);
 
             // กรองตามคำค้นหาในปฏิทิน
             if (state.calendarSearchQuery.trim() !== '') {
@@ -1744,13 +1754,21 @@
             }
         };
 
+        // เมื่อเลือกสถานะ "รอติดเครื่องชาร์จ" (waiting_charger) ให้ระบบย้ายงานไปให้ EV123 อัตโนมัติ
         window.updateProjectStatus = async function(id, newStatus) {
             const p = state.projects.find(x => x.id === id);
             if (p) {
                 p.status = newStatus;
+                if (newStatus === 'waiting_charger') {
+                    p.technician = 'EV123';
+                }
                 await saveProjectToFirestore(p);
                 render();
-                showMessage('เปลี่ยนสถานะงานเรียบร้อยแล้ว', 'fa-solid fa-circle-check');
+                if (newStatus === 'waiting_charger') {
+                    showMessage('เปลี่ยนสถานะเป็น "รอติดเครื่องชาร์จ" และย้ายงานไปให้ EV123 เรียบร้อยแล้ว', 'fa-solid fa-circle-check');
+                } else {
+                    showMessage('เปลี่ยนสถานะงานเรียบร้อยแล้ว', 'fa-solid fa-circle-check');
+                }
             }
         };
 
