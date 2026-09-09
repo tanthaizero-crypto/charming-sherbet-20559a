@@ -345,7 +345,7 @@
         import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-        const checklistConfig = [
+        const checklistConfig = {
             { key: 'front_house', label: '1. รูปหน้าบ้าน', type: 'photo' },
             { key: 'garage', label: '2. รูปโรงรถ', type: 'photo' },
             { key: 'car', label: '3. รูปรถ', type: 'photo' },
@@ -420,7 +420,7 @@
             { key: 'doc_page_3', label: '72. เอกสารหน้าที่ 3', type: 'photo' },
             { key: 'doc_page_4', label: '73. เอกสารหน้าที่ 4', type: 'photo' },
             { key: 'doc_page_5', label: '74. เอกสารหน้าที่ 5', type: 'photo' }
-        ];
+        };
 
         let state = {
             currentUser: null,
