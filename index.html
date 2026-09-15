@@ -59,13 +59,13 @@
                 <i class="fa-solid fa-magnifying-glass-plus text-slate-400 text-base"></i>
             </div>
 
-            <div id="cameraStampOverlay" class="absolute bottom-6 left-6 right-6 sm:left-8 sm:right-8 bg-slate-950/80 backdrop-blur-md text-white text-[18px] sm:text-[20px] p-4 rounded-2xl pointer-events-none font-mono space-y-2 border border-white/15 shadow-2xl z-10">
+            <div id="cameraStampOverlay" class="absolute bottom-6 left-6 right-6 sm:left-8 sm:right-8 bg-slate-950/80 backdrop-blur-md text-white text-[13px] sm:text-[15px] p-3.5 rounded-2xl pointer-events-none font-mono space-y-1 border border-white/15 shadow-2xl z-10">
                 <div class="flex justify-between items-center">
-                    <span id="stampProject" class="text-amber-400 font-bold truncate text-[20px] sm:text-[22px]">-</span>
-                    <span id="stampDateTime" class="text-slate-200 text-[18px] sm:text-[20px]">-</span>
+                    <span id="stampProject" class="text-amber-400 font-bold truncate text-[14px] sm:text-[16px]">-</span>
+                    <span id="stampDateTime" class="text-slate-200 text-[13px] sm:text-[15px]">-</span>
                 </div>
-                <div id="stampItem" class="text-blue-400 font-bold truncate text-[20px] sm:text-[22px]">-</div>
-                <div id="stampAddress" class="text-emerald-400 truncate text-[16px] sm:text-[18px]">📍 พร้อมใช้งานพิกัด GPS</div>
+                <div id="stampItem" class="text-blue-400 font-bold truncate text-[14px] sm:text-[16px]">-</div>
+                <div id="stampAddress" class="text-emerald-400 truncate text-[12px] sm:text-[13px]">📍 กำลังดึงพิกัด GPS...</div>
             </div>
         </div>
         <div class="p-6 sm:p-8 bg-slate-900/90 backdrop-blur-md flex flex-wrap justify-between items-center gap-4 w-full z-10 shrink-0 border-t border-white/10">
@@ -470,8 +470,10 @@
             calendarMonth: new Date().getMonth()
         };
 
-        let cachedGlobalAddress = "พร้อมใช้งานพิกัด GPS";
-        function requestGlobalGeolocation() {
+        let cachedGlobalAddress = "กำลังดึงพิกัด GPS...";
+        
+        // ฟังก์ชันดึงพิกัดล่วงหน้า (Pre-fetch) ทันทีที่เปิดใช้งานโปรเจค
+        function requestGlobalGeolocation(callback) {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
                     const lat = pos.coords.latitude;
@@ -487,9 +489,14 @@
                     } catch (err) {
                         cachedGlobalAddress = `Lat: ${lat.toFixed(5)}, Lon: ${lon.toFixed(5)}`;
                     }
-                }, () => {
-                    cachedGlobalAddress = "ไม่สามารถเข้าถึงพิกัด GPS ได้";
-                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 });
+                    if (callback) callback(cachedGlobalAddress);
+                }, (err) => {
+                    cachedGlobalAddress = "ไม่สามารถเข้าถึงพิกัด GPS ได้ (กรุณาเปิด GPS)";
+                    if (callback) callback(cachedGlobalAddress);
+                }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+            } else {
+                cachedGlobalAddress = "เบราว์เซอร์ไม่รองรับ GPS";
+                if (callback) callback(cachedGlobalAddress);
             }
         }
 
@@ -1635,7 +1642,7 @@
         window.selectProject = function(id) { 
             state.selectedProjectId = id; 
             saveAppState(); 
-            requestGlobalGeolocation(); 
+            requestGlobalGeolocation(); // ดึงพิกัดล่วงหน้าทันทีที่เลือกโปรเจค
             render(); 
         };
 
@@ -1992,31 +1999,32 @@
                     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
                     ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-                    ctx.shadowBlur = 4;
-                    ctx.lineWidth = 2.5;
-                    ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+                    ctx.shadowBlur = 3;
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
 
-                    const padding = 25;
-                    let curY = h - 75;
+                    const padding = 20;
+                    let curY = h - 65;
 
-                    ctx.font = 'bold 22px sans-serif';
+                    ctx.font = 'bold 25px sans-serif';
                     ctx.fillStyle = '#ffffff';
                     ctx.strokeText(`${timeStr}`, padding, curY);
                     ctx.fillText(`${timeStr}`, padding, curY);
 
-                    ctx.font = 'bold 12px sans-serif';
+                    ctx.font = 'bold 14px sans-serif';
                     ctx.fillStyle = '#fbbf24';
-                    ctx.strokeText(`${dateStr}`, padding + 75, curY - 5);
-                    ctx.fillText(`${dateStr}`, padding + 75, curY - 5);
+                    ctx.strokeText(`${dateStr}`, padding + 95, curY - 6);
+                    ctx.fillText(`${dateStr}`, padding + 95, curY - 6);
+
+                    curY += 24;
+                    ctx.font = 'bold 15px sans-serif';
+                    ctx.fillStyle = '#60a5fa';
+                    const thaiLabel = galleryUploadKey ? (checklistConfig.find(c => c.key === galleryUploadKey)?.label || galleryUploadKey) : '';
+                    ctx.strokeText(`รหัสงาน: ${p.code} | ${thaiLabel}`, padding, curY);
+                    ctx.fillText(`รหัสงาน: ${p.code} | ${thaiLabel}`, padding, curY);
 
                     curY += 22;
                     ctx.font = 'bold 13px sans-serif';
-                    ctx.fillStyle = '#60a5fa';
-                    ctx.strokeText(`รหัสงาน: ${p.code} | ${galleryUploadKey}`, padding, curY);
-                    ctx.fillText(`รหัสงาน: ${p.code} | ${galleryUploadKey}`, padding, curY);
-
-                    curY += 20;
-                    ctx.font = 'bold 11px sans-serif';
                     ctx.fillStyle = '#34d399';
                     ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
                     ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
@@ -2055,9 +2063,9 @@
             document.getElementById('stampProject').innerText = `รหัสงาน: ${projCode}`;
             document.getElementById('stampDateTime').innerText = `${timeStr}  ${dateStr}`;
             document.getElementById('stampItem').innerText = `${label}`;
+            
+            // ใช้พิกัดที่ดึงรอล่วงหน้ามาแสดงผลทันที (ไม่ต้องรอโหลด)
             document.getElementById('stampAddress').innerText = `📍 ${cachedGlobalAddress}`;
-
-            requestGlobalGeolocation();
 
             try {
                 mediaStream = await navigator.mediaDevices.getUserMedia({ 
@@ -2114,31 +2122,31 @@
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
             ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-            ctx.shadowBlur = 4;
-            ctx.lineWidth = 2.5;
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.shadowBlur = 3;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
 
-            const padding = 25;
-            let curY = vHeight - 75;
+            const padding = 20;
+            let curY = vHeight - 65;
 
-            ctx.font = 'bold 44px sans-serif';
+            ctx.font = 'bold 31px sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.strokeText(`${timeStr}`, padding, curY);
             ctx.fillText(`${timeStr}`, padding, curY);
 
-            ctx.font = 'bold 24px sans-serif';
+            ctx.font = 'bold 17px sans-serif';
             ctx.fillStyle = '#fbbf24';
-            ctx.strokeText(`${dateStr}`, padding + 150, curY - 10);
-            ctx.fillText(`${dateStr}`, padding + 150, curY - 10);
+            ctx.strokeText(`${dateStr}`, padding + 105, curY - 7);
+            ctx.fillText(`${dateStr}`, padding + 105, curY - 7);
 
-            curY += 40;
-            ctx.font = 'bold 26px sans-serif';
+            curY += 28;
+            ctx.font = 'bold 20px sans-serif';
             ctx.fillStyle = '#60a5fa';
             ctx.strokeText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
             ctx.fillText(`รหัสงาน: ${projCode} | ${activeCameraLabel}`, padding, curY);
 
-            curY += 36;
-            ctx.font = 'bold 22px sans-serif';
+            curY += 25;
+            ctx.font = 'bold 15px sans-serif';
             ctx.fillStyle = '#34d399';
             ctx.strokeText(`📍 ${cachedGlobalAddress}`, padding, curY);
             ctx.fillText(`📍 ${cachedGlobalAddress}`, padding, curY);
@@ -2358,7 +2366,7 @@
 
         window.onload = function() {
             initFirebaseSync();
-            requestGlobalGeolocation(); 
+            requestGlobalGeolocation(); // ดึงพิกัดล่วงหน้าทันทีที่โหลดหน้าเว็บ
             render();
         };
     </script>
