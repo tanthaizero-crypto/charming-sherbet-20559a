@@ -86,8 +86,8 @@
             <!-- AI Raw Text Input Section -->
             <div class="mb-6 bg-gradient-to-br from-indigo-50/70 via-blue-50/50 to-purple-50/70 p-5 rounded-3xl border border-blue-100 shadow-sm space-y-3">
                 <div class="flex items-center justify-between">
-                    <label class="block text-xs font-bold text-indigo-900 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-600 text-sm"></i> วางข้อความดิบสำหรับ AI วิเคราะห์</label>
-                    <span id="aiStatusBadge" class="text-[11px] font-semibold text-indigo-600 hidden">กำลังวิเคราะห์...</span>
+                    <label class="block text-xs font-bold text-indigo-900 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-600 text-sm"></i> วางข้อความดิบสำหรับ AI วิเคราะห์แบบอัจฉริยะขั้นสูง</label>
+                    <span id="aiStatusBadge" class="text-[11px] font-semibold text-indigo-600 hidden">กำลังประมวลผลข้อมูล...</span>
                 </div>
                 <textarea id="aiRawInputText" rows="4" placeholder="วางข้อความรายละเอียดงานทั้งหมด ที่นี่..." class="w-full px-4 py-3 bg-white border border-blue-200/80 rounded-2xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-inner"></textarea>
                 <div class="flex justify-end">
@@ -100,7 +100,7 @@
             <form id="createProjectForm" onsubmit="handleCreateProject(event)" class="space-y-4.5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Project Code (รหัสงาน) - อ่านหลัง Code/รหัส</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">Project Code (รหัสงาน)</label>
                         <input type="text" id="newProjCode" required placeholder="เช่น OJ2608001" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                     </div>
                     <div>
@@ -121,12 +121,12 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">ที่อยู่ลูกค้า (จาก "ที่อยู่" ถึงรหัสไปรษณีย์)</label>
-                    <textarea id="newProjAddress" rows="2.5" required placeholder="123/45 ถ.สุขุมวิท..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">ที่อยู่ลูกค้า</label>
+                    <textarea id="newProjAddress" rows="2.5" required oninput="autoCalculateDistrictAndProvince()" placeholder="123/45 ถ.สุขุมวิท..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">เขต / อำเภอ (คำนวณจากข้อความก่อนจังหวัด)</label>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5">เขต / อำเภอ</label>
                         <input type="text" id="newProjDistrict" placeholder="เช่น คลองหลวง" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                     </div>
                     <div>
@@ -171,7 +171,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">หมายเหตุงาน (อ่านหลัง Vinno / เลขตัวถังรถ)</label>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">หมายเหตุงาน</label>
                     <textarea id="newProjNotes" rows="2" placeholder="รายละเอียดเพิ่มเติม..." class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"></textarea>
                 </div>
                 <div class="flex gap-3 pt-4">
@@ -297,7 +297,7 @@
         </div>
     </div>
 
-    <!-- Image Modal (Lightbox with Slider) -->
+    <!-- Image Modal -->
     <div id="imageModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 hidden flex flex-col items-center justify-between p-4 sm:p-8">
         <div class="w-full max-w-5xl flex justify-between items-center text-white z-10">
             <div id="modalImageAlbumTitle" class="text-sm sm:text-base font-bold text-amber-400">อัลบั้มงาน</div>
@@ -1241,7 +1241,7 @@
                         }).join('')}
                     </div>`}
                 </div>
-            </div>`;
+            `;
         }
 
         let currentAlbumPhotos = [];
@@ -1748,51 +1748,110 @@
             </main>`;
         }
 
-        // AI & Smart Custom Parsing based on exact rules
+        // ฟังก์ชันคำนวณเขต/อำเภอและวันเวลาอย่างอัจฉริยะขั้นสูง
+        window.autoCalculateDistrictAndProvince = function() {
+            const addr = document.getElementById('newProjAddress').value;
+            if (!addr) return;
+
+            const provList = ["กรุงเทพ", "ปทุมธานี", "นนทบุรี", "สมุทรปราการ", "สมุทรสาคร", "นครปฐม", "อยุธยา", "ชลบุรี", "ระยอง", "เชียงใหม่", "ขอนแก่น", "ภูเก็ต", "สงขลา", "ฉะเชิงเทรา", "สระบุรี"];
+            for (let prov of provList) {
+                if (addr.includes(prov)) {
+                    document.getElementById('newProjProvince').value = prov;
+                    break;
+                }
+            }
+
+            // รองรับคำว่า อำเภอ, อ., เขต (เช่น อ.บางใหญ่, เขตคลองเตย)
+            const distMatch = addr.match(/(?:อำเภอ|อ\.|เขต)\s*([ก-ฮa-zA-Z\s]+?)(?:\s+จังหวัด|\s+จ\.|\s+\d{5}|$)/u);
+            if (distMatch) {
+                document.getElementById('newProjDistrict').value = distMatch[1].trim();
+            }
+        };
+
+        // ฟังก์ชันแปลงวันที่ภาษาไทยหรือข้อความวันที่ให้เป็น YYYY-MM-DD
+        window.parseSmartDate = function(text) {
+            if (!text) return new Date().toISOString().split('T')[0];
+            
+            // ค้นหาวัน เดือน ปี พ.ศ. หรือ ค.ศ.
+            const thaiMonths = {
+                "มกราคม": "01", "กุมภาพันธ์": "02", "มีนาคม": "03", "เมษายน": "04", "พฤษภาคม": "05", "มิถุนายน": "06",
+                "กรกฎาคม": "07", "สิงหาคม": "08", "กันยายน": "09", "ตุลาคม": "10", "พฤศจิกายน": "11", "ธันวาคม": "12",
+                "ม.ค.": "01", "ก.พ.": "02", "มี.ค.": "03", "เม.ย.": "04", "พ.ค.": "05", "มิ.ย.": "06",
+                "ก.ค.": "07", "ส.ค.": "08", "ก.ย.": "09", "ต.ค.": "10", "พ.ย.": "11", "ธ.ค.": "12"
+            };
+
+            for (let mName in thaiMonths) {
+                if (text.includes(mName)) {
+                    const regex = new RegExp(`(\\d{1,2})\\s*(?:${mName})\\s*(?:พ\\.ศ\\.|ค\\.ศ\\.|ปี)?\\s*(\\d{2,4})`, 'u');
+                    const match = text.match(regex);
+                    if (match) {
+                        let day = String(match[1]).padStart(2, '0');
+                        let month = thaiMonths[mName];
+                        let year = parseInt(match[2]);
+                        if (year < 100) year += 2500; // กรณีปี พ.ศ. ย่อ
+                        if (year > 2400) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+                        return `${year}-${month}-${day}`;
+                    }
+                }
+            }
+
+            const standardMatch = text.match(/(\d{4}[-\/]\d{2}[-\/]\d{2})/);
+            if (standardMatch) return standardMatch[1].replace(/\//g, '-');
+
+            return new Date().toISOString().split('T')[0];
+        };
+
+        // Hybrid Smart Parsing with Advanced Time & Date Calculation
         window.handleAIParsing = async function() {
             const rawText = document.getElementById('aiRawInputText').value.trim();
             if (!rawText) {
-                showMessage('กรุณากรอกข้อความดิบในช่องด้านบนก่อนให้ AI วิเคราะห์', 'fa-solid fa-triangle-exclamation');
+                showMessage('กรุณากรอกข้อความดิบในช่องด้านบนก่อนกดปุ่มอัตโนมัติ', 'fa-solid fa-triangle-exclamation');
                 return;
             }
 
             const badge = document.getElementById('aiStatusBadge');
             badge.classList.remove('hidden');
-            badge.innerText = '🤖 กำลังให้ AI วิเคราะห์ข้อมูลตามเงื่อนไข...';
+            badge.innerText = '🤖 กำลังประมวลผลข้อมูลและคำนวณเวลาอย่างอัจฉริยะ...';
 
-            let parsedData = { code: "", customerName: "", customerPhone: "", customerAddress: "", district: "", province: "", mapLink: "", date: "", timeStart: "", timeEnd: "", notes: "" };
+            let parsedData = { code: "", customerName: "", customerPhone: "", customerAddress: "", district: "", province: "", mapLink: "", date: "", timeStart: "10:00", timeEnd: "11:00", notes: "" };
 
             try {
-                const systemPrompt = "คุณคือ AI ผู้ช่วยวิเคราะห์ข้อมูลงานติดตั้ง EV Charger แยกข้อความดิบ (Raw Text) ออกมาเป็น JSON object ตามกฎโครงสร้างนี้เท่านั้น:\n- code: รหัสงาน (อ่านข้อมูลหลังจากคำว่า Code, รหัส หรือ รหัสงาน จนสุดบรรทัด)\n- customerName: ชื่อลูกค้า (อ่านข้อมูลหลังจากคำว่า 'ชื่อลูกค้า' จนสุดบรรทัด)\n- customerPhone: เบอร์โทร (อ่านข้อมูลหลังจากคำว่า 'เบอร์ติดต่อ*', 'เบอร์โทรลูกค้า' หรือ 'เบอร์ติดต่อ :' จนสุดบรรทัด)\n- customerAddress: ที่อยู่ลูกค้า (อ่านข้อความเริ่มต้นตั้งแต่หลังคำว่า 'ที่อยู่' หรือ 'สถานที่ติดตั้ง' จนถึงรหัสไปรษณีย์ 5 หลักพอดี)\n- district: เขต หรือ อำเภอ (คำนวณแยกออกมาจากข้อความก่อนจังหวัดในช่องที่อยู่ลูกค้า)\n- province: จังหวัด (คำนวณแยกออกมาจากช่องที่อยู่ลูกค้า)\n- mapLink: ลิงก์ Google Maps หากมี\n- date: วันที่นัดหมายรูปแบบ YYYY-MM-DD\n- timeStart: เวลาเริ่มต้น HH:MM\n- timeEnd: เวลาสิ้นสุด HH:MM\n- notes: หมายเหตุงาน (อ่านข้อมูลหลังจากคำว่า 'Vinno', 'หมายเลขตัวถัง' หรือ 'เลขตัวถังรถ :' จนสุดบรรทัด)\nถ้าไม่มีข้อมูลใด ให้ใส่ค่าเป็นสตริงว่าง \"\"";
-                const userQuery = `วิเคราะห์ข้อความนี้:\n${rawText}`;
-                const apiKey = "";
+                const apiKey = "AQ.Ab8RN6L_Kt9WpiQB-7xaGsIU3Z9PBdHex1m2arKtnVf7B9dpug";
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-
-                const payload = {
-                    contents: [{ parts: [{ text: userQuery }] }],
-                    systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: {
-                        responseMimeType: "application/json"
-                    }
-                };
+                
+                const systemPrompt = `คุณเป็นระบบดึงข้อมูลงานติดตั้ง EV Charger แปลงข้อความดิบเป็น JSON ตามกฎนี้อย่างเคร่งครัด:
+1. code: ข้อความหลังคำว่า Code, รหัส หรือ รหัสงาน จนสุดบรรทัด
+2. customerName: ข้อความหลังคำว่า "ชื่อลูกค้า" จนสุดบรรทัด
+3. customerPhone: ข้อความหลังคำว่า "เบอร์ติดต่อ*", "เบอร์โทรลูกค้า" หรือ "เบอร์ติดต่อ :" จนสุดบรรทัด
+4. customerAddress: ข้อความเริ่มต้นตั้งแต่คำว่า "ที่อยู่" หรือ "สถานที่ติดตั้ง" ยาวไปจนถึงรหัสไปรษณีย์ 5 หลักพอดี
+5. district: เขตหรืออำเภอที่ดึงออกมาจากช่องที่อยู่ลูกค้า (รองรับคำย่อ เช่น อ. หรือ อำเภอ)
+6. province: จังหวัดที่ดึงออกมาจากช่องที่อยู่ลูกค้า
+7. mapLink: ลิงก์ https:// หากมี
+8. date: วันที่ในข้อความแปลงเป็นรูปแบบ YYYY-MM-DD
+9. timeStart และ timeEnd: เวลาเริ่มต้นและสิ้นสุดในข้อความ (หากไม่มีกำหนดค่าเริ่มต้นเป็น 10:00 และ 11:00)
+10. notes: ข้อความหลัง "Vinno", "หมายเลขตัวถัง" หรือ "เลขตัวถังรถ :" จนสุดบรรทัด
+ส่งออกเป็น JSON เท่านั้น`;
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: `วิเคราะห์ข้อความนี้:\n${rawText}` }] }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] },
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
                 });
                 const result = await response.json();
                 const candidate = result.candidates?.[0];
                 if (candidate && candidate.content?.parts?.[0]?.text) {
                     parsedData = JSON.parse(candidate.content.parts[0].text);
                 } else {
-                    throw new Error("API response invalid");
+                    throw new Error();
                 }
-            } catch (err) {
-                // Fallback Smart Parsing (Regex & Keyword Rule Matching)
+            } catch (e) {
+                // Fallback Deterministic Parser
                 const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-                
-                // 1. Project Code (หลัง Code / รหัส / รหัสงาน จนสุดบรรทัด)
+
                 const codeMatch = rawText.match(/(?:รหัสงาน|รหัส|Code)[:\s]*([^\r\n]+)/i);
                 if (codeMatch) {
                     parsedData.code = codeMatch[1].trim();
@@ -1801,15 +1860,18 @@
                     if (fallbackCode) parsedData.code = fallbackCode[1];
                 }
 
-                // 2. ชื่อลูกค้า (หลัง ชื่อลูกค้า จนสุดบรรทัด)
                 const nameMatch = rawText.match(/(?:ชื่อลูกค้า)[:\s]*([^\r\n]+)/i);
                 if (nameMatch) {
                     parsedData.customerName = nameMatch[1].trim();
-                } else if (lines.length > 0) {
-                    parsedData.customerName = lines[0];
+                } else {
+                    for (let l of lines) {
+                        if (!l.includes("0") && !l.includes("OJ") && !l.includes("ที่อยู่") && l.length > 2) {
+                            parsedData.customerName = l;
+                            break;
+                        }
+                    }
                 }
 
-                // 3. เบอร์โทรศัพท์ (หลัง เบอร์ติดต่อ* / เบอร์โทรลูกค้า / เบอร์ติดต่อ :)
                 const phoneMatch = rawText.match(/(?:เบอร์ติดต่อ\*|เบอร์โทรลูกค้า|เบอร์ติดต่อ\s*:|เบอร์โทร)[:\s]*([^\r\n]+)/i);
                 if (phoneMatch) {
                     parsedData.customerPhone = phoneMatch[1].trim();
@@ -1818,21 +1880,15 @@
                     if (pNum) parsedData.customerPhone = pNum[0];
                 }
 
-                // 4. ที่อยู่ลูกค้า (หลัง "ที่อยู่" จนถึงรหัสไปรษณีย์ 5 หลัก)
                 const addrRegex = /(?:ที่อยู่|สถานที่ติดตั้ง|พิกัด|ที่ตั้ง)[:\s]*([\s\S]*?\b\d{5}\b)/i;
                 const addrMatch = rawText.match(addrRegex);
                 if (addrMatch) {
                     parsedData.customerAddress = addrMatch[1].trim();
                 } else {
-                    const fallbackAddrMatch = rawText.match(/([\s\S]*?\b\d{5}\b)/);
-                    if (fallbackAddrMatch) {
-                        parsedData.customerAddress = fallbackAddrMatch[1].trim();
-                    } else {
-                        parsedData.customerAddress = rawText;
-                    }
+                    const fallback = rawText.match(/([\s\S]*?\b\d{5}\b)/);
+                    if (fallback) parsedData.customerAddress = fallback[1].trim();
                 }
 
-                // 5. จังหวัด และ เขต/อำเภอ (คำนวณจากช่องที่อยู่)
                 const provList = ["กรุงเทพ", "ปทุมธานี", "นนทบุรี", "สมุทรปราการ", "สมุทรสาคร", "นครปฐม", "อยุธยา", "ชลบุรี", "ระยอง", "เชียงใหม่", "ขอนแก่น", "ภูเก็ต", "สงขลา"];
                 for (let prov of provList) {
                     if (parsedData.customerAddress.includes(prov)) {
@@ -1840,27 +1896,11 @@
                         break;
                     }
                 }
+
                 const distMatch = parsedData.customerAddress.match(/(?:อำเภอ|อ\.|เขต)\s*([ก-ฮa-zA-Z\s]+?)(?:\s+จังหวัด|\s+จ\.|\s+\d{5}|$)/u);
                 if (distMatch) parsedData.district = distMatch[1].trim();
 
-                // 6. Google Maps Link
-                const mapMatch = rawText.match(/(https?:\/\/[^\s]+)/);
-                if (mapMatch) parsedData.mapLink = mapMatch[1];
-
-                // 7. วันที่และเวลา
-                const dateMatch = rawText.match(/(\d{4}[-\/]\d{2}[-\/]\d{2})/) || rawText.match(/(\d{2}[-\/]\d{2}[-\/]\d{4})/);
-                if (dateMatch) {
-                    let dStr = dateMatch[1].replace(/\//g, '-');
-                    if (dStr.indexOf('-') === 2) {
-                        const p = dStr.split('-');
-                        let yr = parseInt(p[2]);
-                        if (yr > 2400) yr -= 543;
-                        dStr = `${yr}-${p[1]}-${p.slice(0, 2).join('-')}`;
-                    }
-                    parsedData.date = dStr;
-                } else {
-                    parsedData.date = new Date().toISOString().split('T')[0];
-                }
+                parsedData.date = parseSmartDate(rawText);
 
                 const timeMatch = rawText.match(/(\d{1,2}[:.]\d{2})\s*(?:ถึง|-)\s*(\d{1,2}[:.]\d{2})/);
                 if (timeMatch) {
@@ -1871,11 +1911,8 @@
                     parsedData.timeEnd = "11:00";
                 }
 
-                // 8. หมายเหตุงาน (หลัง Vinno / หมายเลขตัวถัง / เลขตัวถังรถ : จนสุดบรรทัด)
                 const vinMatch = rawText.match(/(?:Vinno|หมายเลขตัวถัง|เลขตัวถังรถ\s*:|Vin)[:\s]*([^\r\n]+)/i);
-                if (vinMatch) {
-                    parsedData.notes = vinMatch[1].trim();
-                }
+                if (vinMatch) parsedData.notes = vinMatch[1].trim();
             }
 
             if (parsedData.code) document.getElementById('newProjCode').value = parsedData.code;
@@ -1890,7 +1927,9 @@
             if (parsedData.timeEnd) document.getElementById('newProjTimeEnd').value = parsedData.timeEnd;
             if (parsedData.notes) document.getElementById('newProjNotes').value = parsedData.notes;
 
-            badge.innerText = '✅ AI จัดการและกรอกข้อมูลสำเร็จ!';
+            autoCalculateDistrictAndProvince();
+
+            badge.innerText = '✅ จัดการข้อมูลและเวลาเรียบร้อยแล้ว!';
             setTimeout(() => badge.classList.add('hidden'), 4000);
         };
 
