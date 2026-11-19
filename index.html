@@ -276,6 +276,62 @@
         </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+                <h3 class="font-bold text-lg text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-user-pen"></i></div> แก้ไขข้อมูลผู้ใช้งาน</h3>
+                <button onclick="closeEditUserModal()" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="editUserForm" onsubmit="handleEditUserSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">ชื่อผู้ใช้งาน (Username - แก้ไขไม่ได้)</label>
+                    <input type="text" id="editUserUsername" readonly class="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-2xl text-sm font-mono font-bold text-slate-500 cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">รหัสผ่าน / PIN</label>
+                    <input type="text" id="editUserPin" required placeholder="กรอกรหัสผ่านใหม่" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">ชื่อ - นามสกุล</label>
+                    <input type="text" id="editUserName" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">บทบาท (Role)</label>
+                    <select id="editUserRole" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <option value="technician">ช่าง (Technician)</option>
+                        <option value="admin">ผู้ดูแลระบบ (Admin)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">E-mail</label>
+                    <input type="email" id="editUserEmail" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="editUserPhone" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeEditUserModal()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-sm transition">ยกเลิก</button>
+                    <button type="submit" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-blue-600/30 transition">บันทึกการแก้ไข</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div id="deleteUserModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] max-w-sm w-full p-8 shadow-2xl text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-16 h-16 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner"><i class="fa-solid fa-user-xmark"></i></div>
+            <p class="text-sm font-semibold text-slate-800 mb-2">คุณต้องการลบผู้ใช้งานนี้ใช่หรือไม่?</p>
+            <p id="deleteUserTargetText" class="text-xs text-slate-500 mb-6 font-mono font-bold"></p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteUserModal()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-sm transition">ยกเลิก</button>
+                <button onclick="executeDeleteUser()" class="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-bold text-sm shadow-xl shadow-red-600/30 transition">ลบผู้ใช้</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick Edit Notes Modal -->
     <div id="quickNotesModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] max-w-md w-full p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
@@ -554,9 +610,6 @@
                     if (!loadedUsers.some(u => u.username === 'admin')) {
                         loadedUsers.push({ username: 'admin', pin: '1234', role: 'admin', name: 'ผู้ดูแลระบบ (Admin)', status: 'approved', email: 'admin@evcharger.com', phone: '0800000000' });
                     }
-                    if (!loadedUsers.some(u => u.username === 'EV123')) {
-                        loadedUsers.push({ username: 'EV123', pin: '1234', role: 'technician', name: 'EV123', status: 'approved', email: 'ev123@evcharger.com', phone: '0899999999' });
-                    }
                     state.users = loadedUsers;
                 } else {
                     state.users.forEach(async (u) => {
@@ -579,6 +632,10 @@
 
         async function saveUserToFirestore(u) {
             try { await setDoc(doc(db, "users", u.username), u); } catch (err) { console.error(err); }
+        }
+
+        async function deleteUserFromFirestore(username) {
+            try { await deleteDoc(doc(db, "users", username)); } catch (err) { console.error(err); }
         }
 
         async function deleteProjectFromFirestore(id) {
@@ -853,7 +910,6 @@
         function renderDashboardTab() {
             const isAdmin = state.currentUser.role === 'admin';
             let allProj = isAdmin ? state.projects : state.projects.filter(p => p.technician === state.currentUser.name || p.technician === state.currentUser.username);
-            const totalJobs = allProj.length;
             const surveyJobs = allProj.filter(p => p.status === 'survey').length;
             const waitingChargerJobs = allProj.filter(p => p.status === 'waiting_charger').length;
             const inProgressJobs = allProj.filter(p => !p.status || p.status === 'inprogress').length;
@@ -1487,7 +1543,9 @@
                     <h3 class="font-bold text-xl text-slate-900 flex items-center gap-3"><div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center"><i class="fa-solid fa-users"></i></div> จัดการผู้ใช้งาน</h3>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${state.users.map(u => `
+                    ${state.users.map(u => {
+                        const isRootAdmin = u.username === 'admin';
+                        return `
                         <div class="bg-white p-6 rounded-[2rem] border border-slate-200 flex flex-col justify-between shadow-sm">
                             <div>
                                 <div class="flex justify-between items-start mb-3">
@@ -1495,16 +1553,23 @@
                                     <span class="px-3.5 py-1 text-xs font-bold rounded-xl ${u.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${u.status === 'approved' ? 'ใช้งานอยู่' : 'รออนุมัติ'}</span>
                                 </div>
                                 <h4 class="font-bold text-slate-900 text-base mb-1">${u.name}</h4>
-                                <p class="text-xs text-slate-500 mb-2:">บทบาท: <strong class="text-blue-600">${u.role === 'admin' ? 'Admin' : 'ช่าง'}</strong></p>
+                                <p class="text-xs text-slate-500 mb-1">บทบาท: <strong class="text-blue-600">${u.role === 'admin' ? 'Admin' : 'ช่าง'}</strong> | รหัสผ่าน: <span class="font-mono font-semibold text-slate-700">${u.pin || '-'}</span></p>
                                 <p class="text-xs text-slate-500 mb-4">📧 ${u.email || '-'} | 📞 ${u.phone || '-'}</p>
                             </div>
                             <div class="flex items-center gap-2 pt-4 border-t border-slate-100">
-                                <button onclick="toggleUserStatus('${u.username}')" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-semibold transition">
+                                <button onclick="toggleUserStatus('${u.username}')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition">
                                     ${u.status === 'approved' ? 'ระงับชั่วคราว' : 'อนุมัติ'}
                                 </button>
+                                <button onclick="openEditUserModal('${u.username}')" class="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-xl text-xs font-bold transition flex items-center gap-1" title="แก้ไขข้อมูลและรหัสผ่าน">
+                                    <i class="fa-solid fa-pen"></i> แก้ไข
+                                </button>
+                                ${!isRootAdmin ? `
+                                <button onclick="promptDeleteUser('${u.username}')" class="px-3.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold transition" title="ลบผู้ใช้งาน">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>` : ''}
                             </div>
-                        </div>
-                    `).join('')}
+                        </div>`;
+                    }).join('')}
                 </div>
             </div>`;
         }
@@ -1515,6 +1580,71 @@
                 u.status = u.status === 'approved' ? 'pending' : 'approved';
                 await saveUserToFirestore(u);
                 render();
+            }
+        };
+
+        window.openEditUserModal = function(username) {
+            const u = state.users.find(x => x.username === username);
+            if (!u) return;
+            document.getElementById('editUserUsername').value = u.username;
+            document.getElementById('editUserPin').value = u.pin || '';
+            document.getElementById('editUserName').value = u.name || '';
+            document.getElementById('editUserRole').value = u.role || 'technician';
+            document.getElementById('editUserEmail').value = u.email || '';
+            document.getElementById('editUserPhone').value = u.phone || '';
+            document.getElementById('editUserModal').classList.remove('hidden');
+        };
+
+        window.closeEditUserModal = function() {
+            document.getElementById('editUserModal').classList.add('hidden');
+        };
+
+        window.handleEditUserSubmit = async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('editUserUsername').value;
+            const u = state.users.find(x => x.username === username);
+            if (!u) return;
+
+            u.pin = document.getElementById('editUserPin').value.trim();
+            u.name = document.getElementById('editUserName').value.trim();
+            u.role = document.getElementById('editUserRole').value;
+            u.email = document.getElementById('editUserEmail').value.trim();
+            u.phone = document.getElementById('editUserPhone').value.trim();
+
+            await saveUserToFirestore(u);
+
+            if (state.currentUser && state.currentUser.username === username) {
+                state.currentUser = u;
+                saveAppState();
+            }
+
+            closeEditUserModal();
+            render();
+            showMessage('อัปเดตข้อมูลผู้ใช้งานเรียบร้อยแล้ว', 'fa-solid fa-circle-check');
+        };
+
+        let pendingDeleteUsername = null;
+        window.promptDeleteUser = function(username) {
+            if (username === 'admin') {
+                showMessage('ไม่สามารถลบบัญชีผู้ดูแลระบบหลักได้', 'fa-solid fa-triangle-exclamation');
+                return;
+            }
+            const u = state.users.find(x => x.username === username);
+            pendingDeleteUsername = username;
+            document.getElementById('deleteUserTargetText').innerText = u ? `${u.name} (${u.username})` : username;
+            document.getElementById('deleteUserModal').classList.remove('hidden');
+        };
+
+        window.closeDeleteUserModal = function() {
+            pendingDeleteUsername = null;
+            document.getElementById('deleteUserModal').classList.add('hidden');
+        };
+
+        window.executeDeleteUser = async function() {
+            if (pendingDeleteUsername) {
+                await deleteUserFromFirestore(pendingDeleteUsername);
+                closeDeleteUserModal();
+                showMessage('ลบผู้ใช้งานออกจากระบบเรียบร้อยแล้ว', 'fa-solid fa-trash');
             }
         };
 
@@ -1761,18 +1891,15 @@
                 }
             }
 
-            // รองรับคำว่า อำเภอ, อ., เขต (เช่น อ.บางใหญ่, เขตคลองเตย)
             const distMatch = addr.match(/(?:อำเภอ|อ\.|เขต)\s*([ก-ฮa-zA-Z\s]+?)(?:\s+จังหวัด|\s+จ\.|\s+\d{5}|$)/u);
             if (distMatch) {
                 document.getElementById('newProjDistrict').value = distMatch[1].trim();
             }
         };
 
-        // ฟังก์ชันแปลงวันที่ภาษาไทยหรือข้อความวันที่ให้เป็น YYYY-MM-DD
         window.parseSmartDate = function(text) {
             if (!text) return new Date().toISOString().split('T')[0];
             
-            // ค้นหาวัน เดือน ปี พ.ศ. หรือ ค.ศ.
             const thaiMonths = {
                 "มกราคม": "01", "กุมภาพันธ์": "02", "มีนาคม": "03", "เมษายน": "04", "พฤษภาคม": "05", "มิถุนายน": "06",
                 "กรกฎาคม": "07", "สิงหาคม": "08", "กันยายน": "09", "ตุลาคม": "10", "พฤศจิกายน": "11", "ธันวาคม": "12",
@@ -1788,8 +1915,8 @@
                         let day = String(match[1]).padStart(2, '0');
                         let month = thaiMonths[mName];
                         let year = parseInt(match[2]);
-                        if (year < 100) year += 2500; // กรณีปี พ.ศ. ย่อ
-                        if (year > 2400) year -= 543; // แปลง พ.ศ. เป็น ค.ศ.
+                        if (year < 100) year += 2500;
+                        if (year > 2400) year -= 543;
                         return `${year}-${month}-${day}`;
                     }
                 }
@@ -1801,7 +1928,6 @@
             return new Date().toISOString().split('T')[0];
         };
 
-        // Hybrid Smart Parsing with Advanced Time & Date Calculation
         window.handleAIParsing = async function() {
             const rawText = document.getElementById('aiRawInputText').value.trim();
             if (!rawText) {
@@ -1849,7 +1975,6 @@
                     throw new Error();
                 }
             } catch (e) {
-                // Fallback Deterministic Parser
                 const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
 
                 const codeMatch = rawText.match(/(?:รหัสงาน|รหัส|Code)[:\s]*([^\r\n]+)/i);
