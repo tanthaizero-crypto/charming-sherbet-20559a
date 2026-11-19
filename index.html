@@ -592,9 +592,15 @@
         if (savedInitialState) {
             try {
                 const parsed = JSON.parse(savedInitialState);
-                if (parsed.currentUser) state.currentUser = parsed.currentUser;
-                if (parsed.selectedProjectId !== undefined) state.selectedProjectId = parsed.selectedProjectId;
-                if (parsed.activeTab) state.activeTab = parsed.activeTab;
+                // ตรวจสอบวันที่ล็อกอิน หากข้ามวัน (เลยเที่ยงคืน) ให้ล้างสถานะล็อกอินทันที
+                const todayStr = new Date().toLocaleDateString('en-CA'); // รูปแบบ YYYY-MM-DD ตามเวลาท้องถิ่น
+                if (parsed.loginDate && parsed.loginDate !== todayStr) {
+                    localStorage.removeItem('ev_charger_app_state');
+                } else {
+                    if (parsed.currentUser) state.currentUser = parsed.currentUser;
+                    if (parsed.selectedProjectId !== undefined) state.selectedProjectId = parsed.selectedProjectId;
+                    if (parsed.activeTab) state.activeTab = parsed.activeTab;
+                }
             } catch(e) {}
         }
 
@@ -622,8 +628,34 @@
 
         async function saveAppState() {
             if (state.currentUser) {
-                localStorage.setItem('ev_charger_app_state', JSON.stringify({ currentUser: state.currentUser, selectedProjectId: state.selectedProjectId, activeTab: state.activeTab }));
+                const existing = JSON.parse(localStorage.getItem('ev_charger_app_state') || '{}');
+                const loginDate = existing.loginDate || new Date().toLocaleDateString('en-CA');
+                localStorage.setItem('ev_charger_app_state', JSON.stringify({ 
+                    currentUser: state.currentUser, 
+                    selectedProjectId: state.selectedProjectId, 
+                    activeTab: state.activeTab,
+                    loginDate: loginDate
+                }));
             }
+        }
+
+        // ระบบตั้งเวลา Auto Logout ทุกวันเวลาเที่ยงคืน (00:00:00)
+        let midnightLogoutTimer = null;
+        function scheduleMidnightLogout() {
+            if (midnightLogoutTimer) clearTimeout(midnightLogoutTimer);
+
+            const now = new Date();
+            const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+            const msUntilMidnight = midnight.getTime() - now.getTime();
+
+            midnightLogoutTimer = setTimeout(() => {
+                if (state.currentUser) {
+                    logout();
+                    showMessage('ระบบได้ทำการออกจากระบบอัตโนมัติ (ครบกำหนดเวลาเที่ยงคืน)', 'fa-solid fa-clock');
+                }
+                // ตั้งเวลาสำหรับเที่ยงคืนของวันถัดไปต่อเนื่อง
+                scheduleMidnightLogout();
+            }, msUntilMidnight);
         }
 
         async function saveProjectToFirestore(p) {
@@ -2685,6 +2717,7 @@
         window.onload = function() {
             initFirebaseSync();
             requestGlobalGeolocation();
+            scheduleMidnightLogout();
             render();
         };
     </script>
